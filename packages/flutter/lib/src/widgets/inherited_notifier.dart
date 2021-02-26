@@ -50,13 +50,13 @@ import 'framework.dart';
 /// ```dart preamble
 /// class SpinModel extends InheritedNotifier<AnimationController> {
 ///   SpinModel({
-///     Key key,
-///     AnimationController notifier,
-///     Widget child,
+///     Key? key,
+///     AnimationController? notifier,
+///     required Widget child,
 ///   }) : super(key: key, notifier: notifier, child: child);
 ///
 ///   static double of(BuildContext context) {
-///     return context.dependOnInheritedWidgetOfExactType<SpinModel>().notifier.value;
+///     return context.dependOnInheritedWidgetOfExactType<SpinModel>()!.notifier!.value;
 ///   }
 /// }
 ///
@@ -81,7 +81,7 @@ import 'framework.dart';
 /// ```
 ///
 /// ```dart
-/// AnimationController _controller;
+/// late AnimationController _controller;
 ///
 /// @override
 /// void initState() {
@@ -131,9 +131,9 @@ abstract class InheritedNotifier<T extends Listenable> extends InheritedWidget {
   ///
   /// The [child] argument must not be null.
   const InheritedNotifier({
-    Key key,
+    Key? key,
     this.notifier,
-    @required Widget child,
+    required Widget child,
   }) : assert(child != null),
        super(key: key, child: child);
 
@@ -149,7 +149,7 @@ abstract class InheritedNotifier<T extends Listenable> extends InheritedWidget {
   ///
   /// While the [notifier] is null, no notifications are sent, since the null
   /// object cannot itself send notifications.
-  final T notifier;
+  final T? notifier;
 
   @override
   bool updateShouldNotify(InheritedNotifier<T> oldWidget) {
@@ -172,8 +172,8 @@ class _InheritedNotifierElement<T extends Listenable> extends InheritedElement {
 
   @override
   void update(InheritedNotifier<T> newWidget) {
-    final T oldNotifier = widget.notifier;
-    final T newNotifier = newWidget.notifier;
+    final T? oldNotifier = widget.notifier;
+    final T? newNotifier = newWidget.notifier;
     if (oldNotifier != newNotifier) {
       oldNotifier?.removeListener(_handleUpdate);
       newNotifier?.addListener(_handleUpdate);

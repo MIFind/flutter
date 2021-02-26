@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:meta/meta.dart';
 
 import '../base/context.dart';
@@ -25,5 +27,6 @@ abstract class WebRunnerFactory {
     @required bool ipv6,
     @required DebuggingOptions debuggingOptions,
     @required UrlTunneller urlTunneller,
+    bool machine = false,
   });
 }

@@ -24,6 +24,7 @@
   "copyButtonLabel": "Kopiraj",
   "pasteButtonLabel": "Zalijepi",
   "selectAllButtonLabel": "Odaberi sve",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Odbaci"
+  "tabSemanticsLabel": "Kartica $tabIndex od $tabCount",
+  "modalBarrierDismissLabel": "Odbaci",
+  "searchTextFieldPlaceholderLabel": "Pretraživanje"
 }

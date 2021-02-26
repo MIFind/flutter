@@ -19,6 +19,7 @@
   "copyButtonLabel": "Kopyalayın",
   "pasteButtonLabel": "Yerləşdirin",
   "selectAllButtonLabel": "Hamısını seçin",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "İmtina edin"
+  "tabSemanticsLabel": "Tab $tabIndex/$tabCount",
+  "modalBarrierDismissLabel": "İmtina edin",
+  "searchTextFieldPlaceholderLabel": "Axtarın"
 }

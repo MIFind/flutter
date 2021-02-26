@@ -19,6 +19,7 @@
   "copyButtonLabel": "Copia",
   "pasteButtonLabel": "Enganxa",
   "selectAllButtonLabel": "Selecciona-ho tot",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Ignora"
+  "tabSemanticsLabel": "Pestanya $tabIndex de $tabCount",
+  "modalBarrierDismissLabel": "Ignora",
+  "searchTextFieldPlaceholderLabel": "Cerca"
 }

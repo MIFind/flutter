@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:async';
 
 import 'package:file/memory.dart';
-import 'package:file_testing/file_testing.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/logger.dart';
 import 'package:flutter_tools/src/base/os.dart';
 import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/web/chrome.dart';
 import 'package:mockito/mockito.dart';
-
 import '../../src/common.dart';
 import '../../src/context.dart';
 
@@ -30,15 +30,15 @@ const List<String> kChromeArgs = <String>[
 const String kDevtoolsStderr = '\n\nDevTools listening\n\n';
 
 void main() {
+  FileExceptionHandler exceptionHandler;
   ChromiumLauncher chromeLauncher;
   FileSystem fileSystem;
   Platform platform;
   FakeProcessManager processManager;
   OperatingSystemUtils operatingSystemUtils;
-  Logger logger;
 
   setUp(() {
-    logger = BufferLogger.test();
+    exceptionHandler = FileExceptionHandler();
     operatingSystemUtils = MockOperatingSystemUtils();
     when(operatingSystemUtils.findFreePort())
         .thenAnswer((Invocation invocation) async {
@@ -47,21 +47,21 @@ void main() {
     platform = FakePlatform(operatingSystem: 'macos', environment: <String, String>{
       kChromeEnvironment: 'example_chrome',
     });
-    fileSystem = MemoryFileSystem.test();
+    fileSystem = MemoryFileSystem.test(opHandle: exceptionHandler.opHandle);
     processManager = FakeProcessManager.list(<FakeCommand>[]);
     chromeLauncher = ChromiumLauncher(
       fileSystem: fileSystem,
       platform: platform,
       processManager: processManager,
       operatingSystemUtils: operatingSystemUtils,
-      logger: logger,
       browserFinder: findChromeExecutable,
+      logger: BufferLogger.test(),
     );
   });
 
   testWithoutContext('can launch chrome and connect to the devtools', () async {
     expect(
-      () async => await testLaunchChrome(
+      () async => await _testLaunchChrome(
         '/.tmp_rand0/flutter_tools_chrome_device.rand0',
         processManager,
         chromeLauncher,
@@ -71,24 +71,24 @@ void main() {
   });
 
   testWithoutContext('cannot have two concurrent instances of chrome', () async {
-    await testLaunchChrome(
+    await _testLaunchChrome(
       '/.tmp_rand0/flutter_tools_chrome_device.rand0',
       processManager,
       chromeLauncher,
     );
 
     expect(
-      () async => await testLaunchChrome(
+      () async => await _testLaunchChrome(
         '/.tmp_rand0/flutter_tools_chrome_device.rand1',
         processManager,
         chromeLauncher,
       ),
-      throwsToolExit(),
+      throwsToolExit(message: 'Only one instance of chrome can be started'),
     );
   });
 
   testWithoutContext('can launch new chrome after stopping a previous chrome', () async {
-    final Chromium chrome = await testLaunchChrome(
+    final Chromium chrome = await _testLaunchChrome(
       '/.tmp_rand0/flutter_tools_chrome_device.rand0',
       processManager,
       chromeLauncher,
@@ -96,7 +96,7 @@ void main() {
     await chrome.close();
 
     expect(
-      () async => await testLaunchChrome(
+      () async => await _testLaunchChrome(
         '/.tmp_rand0/flutter_tools_chrome_device.rand1',
         processManager,
         chromeLauncher,
@@ -105,11 +105,99 @@ void main() {
     );
   });
 
+  testWithoutContext('does not crash if saving profile information fails due to a file system exception.', () async {
+    final BufferLogger logger = BufferLogger.test();
+    chromeLauncher = ChromiumLauncher(
+      fileSystem: fileSystem,
+      platform: platform,
+      processManager: processManager,
+      operatingSystemUtils: operatingSystemUtils,
+      browserFinder: findChromeExecutable,
+      logger: logger,
+    );
+    processManager.addCommand(const FakeCommand(
+      command: <String>[
+        'example_chrome',
+        '--user-data-dir=/.tmp_rand0/flutter_tools_chrome_device.rand0',
+        '--remote-debugging-port=1234',
+        ...kChromeArgs,
+        'example_url',
+      ],
+      stderr: kDevtoolsStderr,
+    ));
+
+    final Chromium chrome = await chromeLauncher.launch(
+      'example_url',
+      skipCheck: true,
+      cacheDir: fileSystem.currentDirectory,
+    );
+
+    // Create cache dir that the Chrome launcher will atttempt to persist, and a file
+    // that will thrown an exception when it is read.
+    const String directoryPrefix = '/.tmp_rand0/flutter_tools_chrome_device.rand0/Default';
+    fileSystem.directory('$directoryPrefix/Local Storage')
+      .createSync(recursive: true);
+    final File file = fileSystem.file('$directoryPrefix/Local Storage/foo')
+      ..createSync(recursive: true);
+    exceptionHandler.addError(
+      file,
+      FileSystemOp.read,
+      const FileSystemException(),
+    );
+
+    await chrome.close(); // does not exit with error.
+    expect(logger.errorText, contains('Failed to save Chrome preferences'));
+  });
+
+  testWithoutContext('does not crash if restoring profile information fails due to a file system exception.', () async {
+    final BufferLogger logger = BufferLogger.test();
+    final File file = fileSystem.file('/Default/foo')
+      ..createSync(recursive: true);
+    exceptionHandler.addError(
+      file,
+      FileSystemOp.read,
+      const FileSystemException(),
+    );
+    chromeLauncher = ChromiumLauncher(
+      fileSystem: fileSystem,
+      platform: platform,
+      processManager: processManager,
+      operatingSystemUtils: operatingSystemUtils,
+      browserFinder: findChromeExecutable,
+      logger: logger,
+    );
+
+    processManager.addCommand(const FakeCommand(
+      command: <String>[
+        'example_chrome',
+        '--user-data-dir=/.tmp_rand0/flutter_tools_chrome_device.rand0',
+        '--remote-debugging-port=1234',
+        ...kChromeArgs,
+        'example_url',
+      ],
+      stderr: kDevtoolsStderr,
+    ));
+
+    fileSystem.currentDirectory.childDirectory('Default').createSync();
+    final Chromium chrome = await chromeLauncher.launch(
+      'example_url',
+      skipCheck: true,
+      cacheDir: fileSystem.currentDirectory,
+    );
+
+    // Create cache dir that the Chrome launcher will atttempt to persist.
+    fileSystem.directory('/.tmp_rand0/flutter_tools_chrome_device.rand0/Default/Local Storage')
+      .createSync(recursive: true);
+
+    await chrome.close(); // does not exit with error.
+    expect(logger.errorText, contains('Failed to restore Chrome preferences'));
+  });
+
   testWithoutContext('can launch chrome with a custom debug port', () async {
     processManager.addCommand(const FakeCommand(
       command: <String>[
         'example_chrome',
-        '--user-data-dir=/.tmp_rand1/flutter_tools_chrome_device.rand1',
+        '--user-data-dir=/.tmp_rand0/flutter_tools_chrome_device.rand0',
         '--remote-debugging-port=10000',
         ...kChromeArgs,
         'example_url',
@@ -131,7 +219,7 @@ void main() {
     processManager.addCommand(const FakeCommand(
       command: <String>[
         'example_chrome',
-        '--user-data-dir=/.tmp_rand1/flutter_tools_chrome_device.rand1',
+        '--user-data-dir=/.tmp_rand0/flutter_tools_chrome_device.rand0',
         '--remote-debugging-port=1234',
         ...kChromeArgs,
         '--headless',
@@ -156,29 +244,29 @@ void main() {
   testWithoutContext('can seed chrome temp directory with existing session data', () async {
     final Completer<void> exitCompleter = Completer<void>.sync();
     final Directory dataDir = fileSystem.directory('chrome-stuff');
-
     final File preferencesFile = dataDir
       .childDirectory('Default')
       .childFile('preferences');
     preferencesFile
       ..createSync(recursive: true)
-      ..writeAsStringSync('example');
+      ..writeAsStringSync('"exit_type":"Crashed"');
 
-    final Directory localStorageContentsDirectory = dataDir
+    final Directory defaultContentDirectory = dataDir
         .childDirectory('Default')
-        .childDirectory('Local Storage')
-        .childDirectory('leveldb');
-    localStorageContentsDirectory.createSync(recursive: true);
-    localStorageContentsDirectory.childFile('LOCK').writeAsBytesSync(<int>[]);
-    localStorageContentsDirectory.childFile('LOG').writeAsStringSync('contents');
+        .childDirectory('Foo');
+        defaultContentDirectory.createSync(recursive: true);
 
-    processManager.addCommand(FakeCommand(command: const <String>[
-      'example_chrome',
-      '--user-data-dir=/.tmp_rand1/flutter_tools_chrome_device.rand1',
-      '--remote-debugging-port=1234',
-      ...kChromeArgs,
-      'example_url',
-    ], completer: exitCompleter));
+    processManager.addCommand(FakeCommand(
+      command: const <String>[
+        'example_chrome',
+        '--user-data-dir=/.tmp_rand0/flutter_tools_chrome_device.rand0',
+        '--remote-debugging-port=1234',
+        ...kChromeArgs,
+        'example_url',
+      ],
+      completer: exitCompleter,
+      stderr: kDevtoolsStderr,
+    ));
 
     await chromeLauncher.launch(
       'example_url',
@@ -186,42 +274,91 @@ void main() {
       cacheDir: dataDir,
     );
 
-    // validate preferences
-    final File tempFile = fileSystem
-      .directory('.tmp_rand1/flutter_tools_chrome_device.rand1')
-      .childDirectory('Default')
-      .childFile('preferences');
-
-    expect(tempFile.existsSync(), true);
-    expect(tempFile.readAsStringSync(), 'example');
-
-    // write crash to file:
-    tempFile.writeAsStringSync('"exit_type":"Crashed"');
     exitCompleter.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 1));
 
     // writes non-crash back to dart_tool
     expect(preferencesFile.readAsStringSync(), '"exit_type":"Normal"');
 
-    // validate local storage
-    final Directory storageDir = fileSystem
-        .directory('.tmp_rand1/flutter_tools_chrome_device.rand1')
+
+    // validate any Default content is copied
+    final Directory defaultContentDir = fileSystem
+        .directory('.tmp_rand0/flutter_tools_chrome_device.rand0')
         .childDirectory('Default')
-        .childDirectory('Local Storage')
-        .childDirectory('leveldb');
+        .childDirectory('Foo');
 
-    expect(storageDir.existsSync(), true);
+    expect(defaultContentDir.existsSync(), true);
+  });
 
-    expect(storageDir.childFile('LOCK'), exists);
-    expect(storageDir.childFile('LOCK').readAsBytesSync(), hasLength(0));
+  testWithoutContext('can retry launch when glibc bug happens', () async {
+    const List<String> args = <String>[
+      'example_chrome',
+      '--user-data-dir=/.tmp_rand0/flutter_tools_chrome_device.rand0',
+      '--remote-debugging-port=1234',
+      ...kChromeArgs,
+      '--headless',
+      '--disable-gpu',
+      '--no-sandbox',
+      '--window-size=2400,1800',
+      'example_url',
+    ];
 
-    expect(storageDir.childFile('LOG'), exists);
-    expect(storageDir.childFile('LOG').readAsStringSync(), 'contents');
+    // Pretend to hit glibc bug 3 times.
+    for (int i = 0; i < 3; i++) {
+      processManager.addCommand(const FakeCommand(
+        command: args,
+        stderr: 'Inconsistency detected by ld.so: ../elf/dl-tls.c: 493: '
+                '_dl_allocate_tls_init: Assertion `listp->slotinfo[cnt].gen '
+                '<= GL(dl_tls_generation)\' failed!',
+      ));
+    }
+
+    // Succeed on the 4th try.
+    processManager.addCommand(const FakeCommand(
+      command: args,
+      stderr: kDevtoolsStderr,
+    ));
+
+    expect(
+      () async => await chromeLauncher.launch(
+        'example_url',
+        skipCheck: true,
+        headless: true,
+      ),
+      returnsNormally,
+    );
+  });
+
+  testWithoutContext('gives up retrying when a non-glibc error happens', () async {
+    processManager.addCommand(const FakeCommand(
+      command: <String>[
+        'example_chrome',
+        '--user-data-dir=/.tmp_rand0/flutter_tools_chrome_device.rand0',
+        '--remote-debugging-port=1234',
+        ...kChromeArgs,
+        '--headless',
+        '--disable-gpu',
+        '--no-sandbox',
+        '--window-size=2400,1800',
+        'example_url',
+      ],
+      stderr: 'nothing in the std error indicating glibc error',
+    ));
+
+    expect(
+      () async => await chromeLauncher.launch(
+        'example_url',
+        skipCheck: true,
+        headless: true,
+      ),
+      throwsToolExit(message: 'Failed to launch browser.'),
+    );
   });
 }
 
 class MockOperatingSystemUtils extends Mock implements OperatingSystemUtils {}
 
-Future<Chromium> testLaunchChrome(String userDataDir, FakeProcessManager processManager, ChromiumLauncher chromeLauncher) {
+Future<Chromium> _testLaunchChrome(String userDataDir, FakeProcessManager processManager, ChromiumLauncher chromeLauncher) {
   processManager.addCommand(FakeCommand(
     command: <String>[
       'example_chrome',

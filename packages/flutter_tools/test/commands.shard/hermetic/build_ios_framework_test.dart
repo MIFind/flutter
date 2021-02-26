@@ -2,17 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:io';
+// @dart = 2.8
 
 import 'package:file/memory.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/build_info.dart';
 import 'package:flutter_tools/src/build_system/build_system.dart';
-import 'package:flutter_tools/src/bundle.dart';
 import 'package:flutter_tools/src/cache.dart';
 import 'package:flutter_tools/src/commands/build_ios_framework.dart';
-import 'package:flutter_tools/src/globals.dart' as globals;
 import 'package:flutter_tools/src/version.dart';
 import 'package:mockito/mockito.dart';
 
@@ -24,7 +22,6 @@ void main() {
     MemoryFileSystem memoryFileSystem;
     MockFlutterVersion mockFlutterVersion;
     MockGitTagVersion mockGitTagVersion;
-    MockCache mockCache;
     Directory outputDirectory;
     FakePlatform fakePlatform;
 
@@ -32,31 +29,40 @@ void main() {
       Cache.disableLocking();
     });
 
+    const String storageBaseUrl = 'https://fake.googleapis.com';
     setUp(() {
-      memoryFileSystem = MemoryFileSystem();
+      memoryFileSystem = MemoryFileSystem.test();
       mockFlutterVersion = MockFlutterVersion();
       mockGitTagVersion = MockGitTagVersion();
-      mockCache = MockCache();
-      fakePlatform = FakePlatform()..operatingSystem = 'macos';
+      fakePlatform = FakePlatform(
+        operatingSystem: 'macos',
+        environment: <String, String>{
+          'FLUTTER_STORAGE_BASE_URL': storageBaseUrl,
+        },
+      );
 
       when(mockFlutterVersion.gitTagVersion).thenReturn(mockGitTagVersion);
-      outputDirectory = globals.fs.systemTempDirectory
+      outputDirectory = memoryFileSystem.systemTempDirectory
           .createTempSync('flutter_build_ios_framework_test_output.')
           .childDirectory('Debug')
         ..createSync();
     });
 
     group('podspec', () {
-      const String storageBaseUrl = 'https://fake.googleapis.com';
       const String engineRevision = '0123456789abcdef';
-      File licenseFile;
+      Cache cache;
 
       setUp(() {
+        final Directory rootOverride = memoryFileSystem.directory('cache');
+        cache = Cache.test(
+          rootOverride: rootOverride,
+          platform: fakePlatform,
+          fileSystem: memoryFileSystem,
+        );
+        rootOverride.childDirectory('bin').childDirectory('internal').childFile('engine.version')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(engineRevision);
         when(mockFlutterVersion.gitTagVersion).thenReturn(mockGitTagVersion);
-        when(mockCache.storageBaseUrl).thenReturn(storageBaseUrl);
-        when(mockCache.engineRevision).thenReturn(engineRevision);
-        licenseFile = memoryFileSystem.file('LICENSE');
-        when(mockCache.getLicenseFile()).thenReturn(licenseFile);
       });
 
       testUsingContext('version unknown', () async {
@@ -65,10 +71,10 @@ void main() {
 
         final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
           buildSystem: MockBuildSystem(),
-          bundleBuilder: MockBundleBuilder(),
           platform: fakePlatform,
           flutterVersion: mockFlutterVersion,
-          cache: mockCache
+          cache: cache,
+          verboseHelp: false,
         );
 
         expect(() => command.produceFlutterPodspec(BuildMode.debug, outputDirectory),
@@ -90,10 +96,10 @@ void main() {
 
         final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
           buildSystem: MockBuildSystem(),
-          bundleBuilder: MockBundleBuilder(),
           platform: fakePlatform,
           flutterVersion: mockFlutterVersion,
-          cache: mockCache
+          cache: cache,
+          verboseHelp: false,
         );
 
         expect(() => command.produceFlutterPodspec(BuildMode.debug, outputDirectory),
@@ -112,10 +118,10 @@ void main() {
 
         final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
           buildSystem: MockBuildSystem(),
-          bundleBuilder: MockBundleBuilder(),
           platform: fakePlatform,
           flutterVersion: mockFlutterVersion,
-          cache: mockCache
+          cache: cache,
+          verboseHelp: false,
         );
 
         expect(() => command.produceFlutterPodspec(BuildMode.debug, outputDirectory),
@@ -137,7 +143,7 @@ void main() {
 
           when(mockFlutterVersion.frameworkVersion).thenReturn(frameworkVersion);
 
-          licenseFile
+          cache.getLicenseFile()
             ..createSync(recursive: true)
             ..writeAsStringSync(licenseText);
         });
@@ -149,11 +155,11 @@ void main() {
 
           testUsingContext('created when forced', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-                buildSystem: MockBuildSystem(),
-                bundleBuilder: MockBundleBuilder(),
-                platform: fakePlatform,
-                flutterVersion: mockFlutterVersion,
-                cache: mockCache
+              buildSystem: MockBuildSystem(),
+              platform: fakePlatform,
+              flutterVersion: mockFlutterVersion,
+              cache: cache,
+              verboseHelp: false,
             );
             command.produceFlutterPodspec(BuildMode.debug, outputDirectory, force: true);
 
@@ -172,11 +178,11 @@ void main() {
 
           testUsingContext('contains license and version', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-                buildSystem: MockBuildSystem(),
-                bundleBuilder: MockBundleBuilder(),
-                platform: fakePlatform,
-                flutterVersion: mockFlutterVersion,
-                cache: mockCache
+              buildSystem: MockBuildSystem(),
+              platform: fakePlatform,
+              flutterVersion: mockFlutterVersion,
+              cache: cache,
+              verboseHelp: false,
             );
             command.produceFlutterPodspec(BuildMode.debug, outputDirectory);
 
@@ -192,17 +198,17 @@ void main() {
 
           testUsingContext('debug URL', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-                buildSystem: MockBuildSystem(),
-                bundleBuilder: MockBundleBuilder(),
-                platform: fakePlatform,
-                flutterVersion: mockFlutterVersion,
-                cache: mockCache
+              buildSystem: MockBuildSystem(),
+              platform: fakePlatform,
+              flutterVersion: mockFlutterVersion,
+              cache: cache,
+              verboseHelp: false,
             );
             command.produceFlutterPodspec(BuildMode.debug, outputDirectory);
 
             final File expectedPodspec = outputDirectory.childFile('Flutter.podspec');
             final String podspecContents = expectedPodspec.readAsStringSync();
-            expect(podspecContents, contains("'$storageBaseUrl/flutter_infra/flutter/$engineRevision/ios/artifacts.zip'"));
+            expect(podspecContents, contains("'$storageBaseUrl/flutter_infra_release/flutter/$engineRevision/ios/artifacts.zip'"));
           }, overrides: <Type, Generator>{
             FileSystem: () => memoryFileSystem,
             ProcessManager: () => FakeProcessManager.any(),
@@ -210,17 +216,17 @@ void main() {
 
           testUsingContext('profile URL', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-                buildSystem: MockBuildSystem(),
-                bundleBuilder: MockBundleBuilder(),
-                platform: fakePlatform,
-                flutterVersion: mockFlutterVersion,
-                cache: mockCache
+              buildSystem: MockBuildSystem(),
+              platform: fakePlatform,
+              flutterVersion: mockFlutterVersion,
+              cache: cache,
+              verboseHelp: false,
             );
             command.produceFlutterPodspec(BuildMode.profile, outputDirectory);
 
             final File expectedPodspec = outputDirectory.childFile('Flutter.podspec');
             final String podspecContents = expectedPodspec.readAsStringSync();
-            expect(podspecContents, contains("'$storageBaseUrl/flutter_infra/flutter/$engineRevision/ios-profile/artifacts.zip'"));
+            expect(podspecContents, contains("'$storageBaseUrl/flutter_infra_release/flutter/$engineRevision/ios-profile/artifacts.zip'"));
           }, overrides: <Type, Generator>{
             FileSystem: () => memoryFileSystem,
             ProcessManager: () => FakeProcessManager.any(),
@@ -228,17 +234,17 @@ void main() {
 
           testUsingContext('release URL', () async {
             final BuildIOSFrameworkCommand command = BuildIOSFrameworkCommand(
-                buildSystem: MockBuildSystem(),
-                bundleBuilder: MockBundleBuilder(),
-                platform: fakePlatform,
-                flutterVersion: mockFlutterVersion,
-                cache: mockCache
+              buildSystem: MockBuildSystem(),
+              platform: fakePlatform,
+              flutterVersion: mockFlutterVersion,
+              cache: cache,
+              verboseHelp: false,
             );
             command.produceFlutterPodspec(BuildMode.release, outputDirectory);
 
             final File expectedPodspec = outputDirectory.childFile('Flutter.podspec');
             final String podspecContents = expectedPodspec.readAsStringSync();
-            expect(podspecContents, contains("'$storageBaseUrl/flutter_infra/flutter/$engineRevision/ios-release/artifacts.zip'"));
+            expect(podspecContents, contains("'$storageBaseUrl/flutter_infra_release/flutter/$engineRevision/ios-release/artifacts.zip'"));
           }, overrides: <Type, Generator>{
             FileSystem: () => memoryFileSystem,
             ProcessManager: () => FakeProcessManager.any(),
@@ -251,6 +257,4 @@ void main() {
 
 class MockFlutterVersion extends Mock implements FlutterVersion {}
 class MockGitTagVersion extends Mock implements GitTagVersion {}
-class MockCache extends Mock implements Cache {}
 class MockBuildSystem extends Mock implements BuildSystem {}
-class MockBundleBuilder extends Mock implements BundleBuilder {}

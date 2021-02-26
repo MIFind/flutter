@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:flutter_tools/src/android/build_validation.dart';
 import 'package:flutter_tools/src/build_info.dart';
 
@@ -45,7 +47,7 @@ void main() {
 
     expect(() => validateBuild(
       const AndroidBuildInfo(
-        // Nigger than maximum supported play store value
+        // bigger than maximum supported play store value
         BuildInfo(BuildMode.debug, '', treeShakeIcons: false, buildNumber: '2100000001'),
         targetArchs: <AndroidArch>[AndroidArch.x86],
       ),

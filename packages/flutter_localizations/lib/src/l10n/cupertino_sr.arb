@@ -24,6 +24,7 @@
   "copyButtonLabel": "Копирај",
   "pasteButtonLabel": "Налепи",
   "selectAllButtonLabel": "Изабери све",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Одбаци"
+  "tabSemanticsLabel": "$tabIndex. картица од $tabCount",
+  "modalBarrierDismissLabel": "Одбаци",
+  "searchTextFieldPlaceholderLabel": "Претражите"
 }

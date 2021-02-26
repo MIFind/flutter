@@ -19,6 +19,7 @@
   "copyButtonLabel": "Kopeeri",
   "pasteButtonLabel": "Kleebi",
   "selectAllButtonLabel": "Vali kõik",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Loobu"
+  "tabSemanticsLabel": "$tabIndex. vaheleht $tabCount-st",
+  "modalBarrierDismissLabel": "Loobu",
+  "searchTextFieldPlaceholderLabel": "Otsige"
 }

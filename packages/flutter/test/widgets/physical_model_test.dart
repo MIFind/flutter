@@ -6,7 +6,6 @@ import 'dart:math' as math show pi;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -104,7 +103,7 @@ void main() {
     Future<void> _testStackChildren(
       WidgetTester tester,
       List<Widget> children, {
-      @required int expectedErrorCount,
+      required int expectedErrorCount,
       bool enableCheck = true,
     }) async {
       assert(expectedErrorCount != null);
@@ -115,7 +114,7 @@ void main() {
       }
       debugDisableShadows = false;
       int count = 0;
-      final void Function(FlutterErrorDetails) oldOnError = FlutterError.onError;
+      final void Function(FlutterErrorDetails)? oldOnError = FlutterError.onError;
       FlutterError.onError = (FlutterErrorDetails details) {
         count++;
       };

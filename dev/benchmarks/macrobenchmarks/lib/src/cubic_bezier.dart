@@ -4,8 +4,6 @@
 
 import 'dart:math';
 
-import 'package:flutter/widgets.dart';
-import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 
 // Based on https://github.com/eseidelGoogle/bezier_perf/blob/master/lib/main.dart
@@ -312,6 +310,10 @@ class AnimatedBezierState extends State<AnimatedBezier>
     super.initState();
     controller = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1000));
+    // Animations are typically implemented using the AnimatedBuilder widget.
+    // This code uses a manual listener for historical reasons and will remain
+    // in order to preserve compatibility with the history of measurements for
+    // this benchmark.
     curve = CurvedAnimation(parent: controller, curve: Curves.linear)
       ..addListener(() {
         setState(() {});

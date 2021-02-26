@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:async';
 
 import 'package:meta/meta.dart';
-import 'package:vm_service/vm_service.dart' as vm_service;
 
 import '../application_package.dart';
 import '../artifacts.dart';
@@ -48,8 +49,21 @@ final String _ipv4Loopback = InternetAddress.loopbackIPv4.address;
 final String _ipv6Loopback = InternetAddress.loopbackIPv6.address;
 
 // Enables testing the fuchsia isolate discovery
-Future<vm_service.VmService> _kDefaultFuchsiaIsolateDiscoveryConnector(Uri uri) {
+Future<FlutterVmService> _kDefaultFuchsiaIsolateDiscoveryConnector(Uri uri) {
   return connectToVmService(uri);
+}
+
+Future<void> _kDefaultDartDevelopmentServiceStarter(
+  Device device,
+  Uri observatoryUri,
+  bool disableServiceAuthCodes,
+) async {
+  await device.dds.startDartDevelopmentService(
+    observatoryUri,
+    0,
+    true,
+    disableServiceAuthCodes,
+  );
 }
 
 /// Read the log for a particular device.
@@ -196,7 +210,6 @@ class FuchsiaDevices extends PollingDeviceDiscovery {
     final String name = words[1];
     final String resolvedHost = await _fuchsiaSdk.fuchsiaDevFinder.resolve(
       name,
-      local: false,
     );
     if (resolvedHost == null) {
       _logger.printError('Failed to resolve host for Fuchsia device `$name`');
@@ -237,19 +250,31 @@ class FuchsiaDevice extends Device {
   bool get supportsStartPaused => false;
 
   @override
-  Future<bool> isAppInstalled(ApplicationPackage app) async => false;
+  Future<bool> isAppInstalled(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async => false;
 
   @override
   Future<bool> isLatestBuildInstalled(ApplicationPackage app) async => false;
 
   @override
-  Future<bool> installApp(ApplicationPackage app) => Future<bool>.value(false);
+  Future<bool> installApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) => Future<bool>.value(false);
 
   @override
-  Future<bool> uninstallApp(ApplicationPackage app) async => false;
+  Future<bool> uninstallApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async => false;
 
   @override
   bool isSupported() => true;
+
+  @override
+  bool supportsRuntimeMode(BuildMode buildMode) => buildMode != BuildMode.jitRelease;
 
   @override
   Future<LaunchResult> startApp(
@@ -260,6 +285,7 @@ class FuchsiaDevice extends Device {
     Map<String, dynamic> platformArgs,
     bool prebuiltApplication = false,
     bool ipv6 = false,
+    String userIdentifier,
   }) async {
     if (!prebuiltApplication) {
       await buildFuchsia(fuchsiaProject: FlutterProject.current().fuchsia,
@@ -269,14 +295,7 @@ class FuchsiaDevice extends Device {
     }
     // Stop the app if it's currently running.
     await stopApp(package);
-    final String host = await fuchsiaSdk.fuchsiaDevFinder.resolve(
-      name,
-      local: true,
-    );
-    if (host == null) {
-      globals.printError('Failed to resolve host for Fuchsia device');
-      return LaunchResult.failed();
-    }
+    final String host = await hostAddress;
     // Find out who the device thinks we are.
     final int port = await globals.os.findFreePort();
     if (port == 0) {
@@ -294,7 +313,7 @@ class FuchsiaDevice extends Device {
       }
       packageRepo.createSync(recursive: true);
     } on Exception catch (e) {
-      globals.printError('Failed to create Fuchisa package repo directory '
+      globals.printError('Failed to create Fuchsia package repo directory '
                  'at ${packageRepo.path}: $e');
       return LaunchResult.failed();
     }
@@ -302,7 +321,6 @@ class FuchsiaDevice extends Device {
     final String appName = FlutterProject.current().manifest.appName;
     final Status status = globals.logger.startProgress(
       'Starting Fuchsia application $appName...',
-      timeout: null,
     );
     FuchsiaPackageServer fuchsiaPackageServer;
     bool serverRegistered = false;
@@ -414,7 +432,7 @@ class FuchsiaDevice extends Device {
     }
 
     if (debuggingOptions.buildInfo.mode.isRelease) {
-      globals.printTrace('App succesfully started in a release mode.');
+      globals.printTrace('App successfully started in a release mode.');
       return LaunchResult.succeeded();
     }
     globals.printTrace('App started in a non-release mode. Setting up vmservice connection.');
@@ -431,7 +449,10 @@ class FuchsiaDevice extends Device {
   }
 
   @override
-  Future<bool> stopApp(covariant FuchsiaApp app) async {
+  Future<bool> stopApp(
+    covariant FuchsiaApp app, {
+    String userIdentifier,
+  }) async {
     final int appKey = await FuchsiaTilesCtl.findAppKey(this, app.id);
     if (appKey != -1) {
       if (!await fuchsiaDeviceTools.tilesCtl.remove(this, appKey)) {
@@ -557,6 +578,32 @@ class FuchsiaDevice extends Device {
   /// [true] if the current host address is IPv6.
   bool get ipv6 => _ipv6 ??= isIPv6Address(id);
 
+  /// Return the address that the device should use to communicate with the
+  /// host.
+  Future<String> get hostAddress async {
+    if (_cachedHostAddress != null) {
+      return _cachedHostAddress;
+    }
+    final RunResult result = await shell(r'echo $SSH_CONNECTION');
+    void fail() {
+      throwToolExit('Failed to get local address, aborting.\n$result');
+    }
+    if (result.exitCode != 0) {
+      fail();
+    }
+    final List<String> splitResult = result.stdout.split(' ');
+    if (splitResult.isEmpty) {
+      fail();
+    }
+    final String addr = splitResult[0].replaceAll('%', '%25');
+    if (addr.isEmpty) {
+      fail();
+    }
+    return _cachedHostAddress = addr;
+  }
+
+  String _cachedHostAddress;
+
   /// List the ports currently running a dart observatory.
   Future<List<int>> servicePorts() async {
     const String findCommand = 'find /hub -name vmservice-port';
@@ -602,7 +649,7 @@ class FuchsiaDevice extends Device {
       throwToolExit('Cannot interact with device. No ssh config.\n'
                     'Try setting FUCHSIA_SSH_CONFIG or FUCHSIA_BUILD_DIR.');
     }
-    return await processUtils.run(<String>[
+    return await globals.processUtils.run(<String>[
       'ssh',
       '-F',
       globals.fuchsiaArtifacts.sshConfig.absolute.path,
@@ -617,7 +664,7 @@ class FuchsiaDevice extends Device {
       throwToolExit('Cannot interact with device. No ssh config.\n'
                     'Try setting FUCHSIA_SSH_CONFIG or FUCHSIA_BUILD_DIR.');
     }
-    return await processUtils.run(<String>[
+    return await globals.processUtils.run(<String>[
       'scp',
       '-F',
       globals.fuchsiaArtifacts.sshConfig.absolute.path,
@@ -641,7 +688,7 @@ class FuchsiaDevice extends Device {
         // netstat shows that the local port is actually being used on the IPv6
         // loopback (::1).
         final Uri uri = Uri.parse('http://[$_ipv6Loopback]:$port');
-        final vm_service.VmService vmService = await connectToVmService(uri);
+        final FlutterVmService vmService = await connectToVmService(uri);
         final List<FlutterView> flutterViews = await vmService.getFlutterViews();
         for (final FlutterView flutterView in flutterViews) {
           if (flutterView.uiIsolate == null) {
@@ -679,15 +726,17 @@ class FuchsiaIsolateDiscoveryProtocol {
     this._device,
     this._isolateName, [
     this._vmServiceConnector = _kDefaultFuchsiaIsolateDiscoveryConnector,
+    this._ddsStarter = _kDefaultDartDevelopmentServiceStarter,
     this._pollOnce = false,
   ]);
 
   static const Duration _pollDuration = Duration(seconds: 10);
-  final Map<int, vm_service.VmService> _ports = <int, vm_service.VmService>{};
+  final Map<int, FlutterVmService> _ports = <int, FlutterVmService>{};
   final FuchsiaDevice _device;
   final String _isolateName;
   final Completer<Uri> _foundUri = Completer<Uri>();
-  final Future<vm_service.VmService> Function(Uri) _vmServiceConnector;
+  final Future<FlutterVmService> Function(Uri) _vmServiceConnector;
+  final Future<void> Function(Device, Uri, bool) _ddsStarter;
   // whether to only poll once.
   final bool _pollOnce;
   Timer _pollingTimer;
@@ -699,7 +748,6 @@ class FuchsiaIsolateDiscoveryProtocol {
     }
     _status ??= globals.logger.startProgress(
       'Waiting for a connection from $_isolateName on ${_device.name}...',
-      timeout: null, // could take an arbitrary amount of time
     );
     unawaited(_findIsolate());  // Completes the _foundUri Future.
     return _foundUri.future.then((Uri uri) {
@@ -723,14 +771,15 @@ class FuchsiaIsolateDiscoveryProtocol {
   Future<void> _findIsolate() async {
     final List<int> ports = await _device.servicePorts();
     for (final int port in ports) {
-      vm_service.VmService service;
+      FlutterVmService service;
       if (_ports.containsKey(port)) {
         service = _ports[port];
       } else {
         final int localPort = await _device.portForwarder.forward(port);
         try {
           final Uri uri = Uri.parse('http://[$_ipv6Loopback]:$localPort');
-          service = await _vmServiceConnector(uri);
+          await _ddsStarter(_device, uri, true);
+          service = await _vmServiceConnector(_device.dds.uri);
           _ports[port] = service;
         } on SocketException catch (err) {
           globals.printTrace('Failed to connect to $localPort: $err');

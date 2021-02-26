@@ -5,6 +5,8 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'rendering_tester.dart';
+
 void main() {
   test('Wrap test; toStringDeep', () {
     final RenderWrap renderWrap = RenderWrap();
@@ -64,6 +66,54 @@ void main() {
     expect(renderWrap.computeMinIntrinsicHeight(250), 80);
     expect(renderWrap.computeMinIntrinsicHeight(80), 250);
     expect(renderWrap.computeMinIntrinsicHeight(79), 250);
+  });
+
+  test('Compute intrinsic height test for width-in-height-out children', () {
+    const double lineHeight = 15.0;
+    final RenderWrap renderWrap = RenderWrap();
+    renderWrap.add(
+      RenderParagraph(
+        const TextSpan(
+          text: 'A very very very very very very very very long text',
+          style: TextStyle(fontSize: lineHeight),
+        ),
+        textDirection: TextDirection.ltr,
+      ),
+    );
+
+    renderWrap.spacing = 0;
+    renderWrap.runSpacing = 0;
+    renderWrap.direction = Axis.horizontal;
+
+    expect(renderWrap.computeMaxIntrinsicHeight(double.infinity), lineHeight);
+    expect(renderWrap.computeMaxIntrinsicHeight(600), 2 * lineHeight);
+    expect(renderWrap.computeMaxIntrinsicHeight(300), 3 * lineHeight);
+  });
+
+  test('Compute intrinsic width test for height-in-width-out children', () {
+    const double lineHeight = 15.0;
+    final RenderWrap renderWrap = RenderWrap();
+    renderWrap.add(
+      // Rotates a width-in-height-out render object to make it height-in-width-out.
+      RenderRotatedBox(
+        quarterTurns: 1,
+        child: RenderParagraph(
+          const TextSpan(
+            text: 'A very very very very very very very very long text',
+            style: TextStyle(fontSize: lineHeight),
+          ),
+          textDirection: TextDirection.ltr,
+        )
+      ),
+    );
+
+    renderWrap.spacing = 0;
+    renderWrap.runSpacing = 0;
+    renderWrap.direction = Axis.vertical;
+
+    expect(renderWrap.computeMaxIntrinsicWidth(double.infinity), lineHeight);
+    expect(renderWrap.computeMaxIntrinsicWidth(600), 2 * lineHeight);
+    expect(renderWrap.computeMaxIntrinsicWidth(300), 3 * lineHeight);
   });
 
   test('Compute intrinsic width test', () {
@@ -150,5 +200,23 @@ void main() {
     expect(renderWrap.computeMinIntrinsicWidth(100), 80);
     expect(renderWrap.computeMinIntrinsicWidth(79), 80);
     expect(renderWrap.computeMinIntrinsicWidth(80), 80);
+  });
+
+  test('Wrap respects clipBehavior', () {
+    const BoxConstraints viewport = BoxConstraints(maxHeight: 100.0, maxWidth: 100.0);
+    final TestClipPaintingContext context = TestClipPaintingContext();
+
+    // By default, clipBehavior should be Clip.none
+    final RenderWrap defaultWrap = RenderWrap(textDirection: TextDirection.ltr, children: <RenderBox>[box200x200]);
+    layout(defaultWrap, constraints: viewport, phase: EnginePhase.composite, onErrors: expectOverflowedErrors);
+    defaultWrap.paint(context, Offset.zero);
+    expect(context.clipBehavior, equals(Clip.none));
+
+    for (final Clip clip in Clip.values) {
+      final RenderWrap wrap = RenderWrap(textDirection: TextDirection.ltr, children: <RenderBox>[box200x200], clipBehavior: clip);
+      layout(wrap, constraints: viewport, phase: EnginePhase.composite, onErrors: expectOverflowedErrors);
+      wrap.paint(context, Offset.zero);
+      expect(context.clipBehavior, equals(clip));
+    }
   });
 }

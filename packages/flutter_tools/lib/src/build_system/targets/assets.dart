@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:meta/meta.dart';
 import 'package:pool/pool.dart';
 
@@ -14,7 +16,7 @@ import '../../devfs.dart';
 import '../../globals.dart' as globals;
 import '../build_system.dart';
 import '../depfile.dart';
-import 'dart.dart';
+import 'common.dart';
 import 'icon_tree_shaker.dart';
 
 /// The input key for an SkSL bundle path.
@@ -31,12 +33,29 @@ const String kBundleSkSLPath = 'BundleSkSLPath';
 /// Returns a [Depfile] containing all assets used in the build.
 Future<Depfile> copyAssets(Environment environment, Directory outputDirectory, {
   Map<String, DevFSContent> additionalContent,
+  @required TargetPlatform targetPlatform,
 }) async {
+  // Check for an SkSL bundle.
+  final String shaderBundlePath = environment.inputs[kBundleSkSLPath];
+  final DevFSContent skslBundle = processSkSLBundle(
+    shaderBundlePath,
+    engineVersion: environment.engineVersion,
+    fileSystem: environment.fileSystem,
+    logger: environment.logger,
+    targetPlatform: targetPlatform,
+  );
+
   final File pubspecFile =  environment.projectDir.childFile('pubspec.yaml');
-  final AssetBundle assetBundle = AssetBundleFactory.instance.createBundle();
+  // Only the default asset bundle style is supported in assemble.
+  final AssetBundle assetBundle = AssetBundleFactory.defaultInstance(
+    logger: environment.logger,
+    fileSystem: environment.fileSystem,
+    platform: globals.platform,
+  ).createBundle();
   final int resultCode = await assetBundle.build(
     manifestPath: pubspecFile.path,
     packagesPath: environment.projectDir.childFile('.packages').path,
+    assetDirPath: null,
   );
   if (resultCode != 0) {
     throw Exception('Failed to bundle asset files.');
@@ -52,15 +71,17 @@ Future<Depfile> copyAssets(Environment environment, Directory outputDirectory, {
   final IconTreeShaker iconTreeShaker = IconTreeShaker(
     environment,
     assetBundle.entries[kFontManifestJson] as DevFSStringContent,
-    processManager: globals.processManager,
-    logger: globals.logger,
-    fileSystem: globals.fs,
-    artifacts: globals.artifacts,
+    processManager: environment.processManager,
+    logger: environment.logger,
+    fileSystem: environment.fileSystem,
+    artifacts: environment.artifacts,
   );
 
   final Map<String, DevFSContent> assetEntries = <String, DevFSContent>{
     ...assetBundle.entries,
     ...?additionalContent,
+    if (skslBundle != null)
+      kSkSLShaderBundlePath: skslBundle,
   };
 
   await Future.wait<void>(
@@ -72,7 +93,8 @@ Future<Depfile> copyAssets(Environment environment, Directory outputDirectory, {
         // to `%23.ext`. However, we have to keep it this way since the
         // platform channels in the framework will URI encode these values,
         // and the native APIs will look for files this way.
-        final File file = globals.fs.file(globals.fs.path.join(outputDirectory.path, entry.key));
+        final File file = environment.fileSystem.file(
+          environment.fileSystem.path.join(outputDirectory.path, entry.key));
         outputs.add(file);
         file.parent.createSync(recursive: true);
         final DevFSContent content = entry.value;
@@ -92,7 +114,13 @@ Future<Depfile> copyAssets(Environment environment, Directory outputDirectory, {
         resource.release();
       }
   }));
-  return Depfile(inputs + assetBundle.additionalDependencies, outputs);
+  final Depfile depfile = Depfile(inputs + assetBundle.additionalDependencies, outputs);
+  if (shaderBundlePath != null) {
+    final File skSLBundleFile = environment.fileSystem
+      .file(shaderBundlePath).absolute;
+    depfile.inputs.add(skSLBundleFile);
+  }
+  return depfile;
 }
 
 /// The path of the SkSL JSON bundle included in flutter_assets.
@@ -155,7 +183,7 @@ DevFSContent processSkSLBundle(String bundlePath, {
     bundle['platform'] as String);
   if (bundleTargetPlatform != targetPlatform) {
     logger.printError(
-      'The SkSL bundle was created for $bundleTargetPlatform, but the curent '
+      'The SkSL bundle was created for $bundleTargetPlatform, but the current '
       'platform is $targetPlatform. This may lead to less efficient shader '
       'caching.'
     );
@@ -197,10 +225,14 @@ class CopyAssets extends Target {
       .buildDir
       .childDirectory('flutter_assets');
     output.createSync(recursive: true);
-    final Depfile depfile = await copyAssets(environment, output);
+    final Depfile depfile = await copyAssets(
+      environment,
+      output,
+      targetPlatform: TargetPlatform.android,
+    );
     final DepfileService depfileService = DepfileService(
-      fileSystem: globals.fs,
-      logger: globals.logger,
+      fileSystem: environment.fileSystem,
+      logger: environment.logger,
     );
     depfileService.writeToFile(
       depfile,

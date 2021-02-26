@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
 import 'package:flutter_driver/flutter_driver.dart';
 import 'package:test/test.dart' hide TypeMatcher, isInstanceOf;
 
@@ -58,7 +57,10 @@ Future<void> main() async {
       await driver.tap(addWindow);
       final SerializableFinder tapWindow = find.byValueKey('TapWindow');
       await driver.tap(tapWindow);
-      final String windowClickCount = await driver.getText(find.byValueKey('WindowClickCount'));
+      final String windowClickCount = await driver.getText(
+        find.byValueKey('WindowClickCount'),
+        timeout: const Duration(seconds: 5),
+      );
       expect(windowClickCount, 'Click count: 1');
     });
   });

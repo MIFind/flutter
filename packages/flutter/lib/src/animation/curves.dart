@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -181,7 +182,7 @@ class Interval extends Curve {
     assert(end >= 0.0);
     assert(end <= 1.0);
     assert(end >= begin);
-    t = ((t - begin) / (end - begin)).clamp(0.0, 1.0) as double;
+    t = ((t - begin) / (end - begin)).clamp(0.0, 1.0);
     if (t == 0.0 || t == 1.0)
       return t;
     return curve.transform(t);
@@ -345,16 +346,12 @@ class Cubic extends Curve {
 ///
 /// class FollowCurve2D extends StatefulWidget {
 ///   const FollowCurve2D({
-///     Key key,
-///     @required this.path,
+///     Key? key,
+///     required this.path,
 ///     this.curve = Curves.easeInOut,
-///     @required this.child,
+///     required this.child,
 ///     this.duration = const Duration(seconds: 1),
-///   })  : assert(path != null),
-///         assert(curve != null),
-///         assert(child != null),
-///         assert(duration != null),
-///         super(key: key);
+///   }) : super(key: key);
 ///
 ///   final Curve2D path;
 ///   final Curve curve;
@@ -367,9 +364,9 @@ class Cubic extends Curve {
 ///
 /// class _FollowCurve2DState extends State<FollowCurve2D> with TickerProviderStateMixin {
 ///   // The animation controller for this animation.
-///   AnimationController controller;
+///   late AnimationController controller;
 ///   // The animation that will be used to apply the widget's animation curve.
-///   Animation<double> animation;
+///   late Animation<double> animation;
 ///
 ///   @override
 ///   void initState() {
@@ -413,7 +410,7 @@ class Cubic extends Curve {
 ///         child: CircleAvatar(
 ///           backgroundColor: Colors.yellow,
 ///           child: DefaultTextStyle(
-///             style: Theme.of(context).textTheme.headline6,
+///             style: Theme.of(context).textTheme.headline6!,
 ///             child: Text("B"), // Buzz, buzz!
 ///           ),
 ///         ),
@@ -524,7 +521,7 @@ abstract class Curve2D extends ParametricCurve<Offset> {
     assert(x != null);
     double start = 0.0;
     double end = 1.0;
-    double mid;
+    late double mid;
     double offsetToOrigin(double pos) => x - transform(pos).dx;
     // Use a binary search to find the inverse point within 1e-6, or 100
     // subdivisions, whichever comes first.
@@ -553,7 +550,7 @@ abstract class Curve2D extends ParametricCurve<Offset> {
 ///  * [Curve2D.generateSamples], which generates samples of this type.
 ///  * [Curve2D], a parametric curve that maps a double parameter to a 2D location.
 class Curve2DSample {
-  /// A const constructor for the sample so that subclasses can be const.
+  /// Creates an object that holds a sample; used with [Curve2D] subclasses.
   ///
   /// All arguments must not be null.
   const Curve2DSample(this.t, this.value) : assert(t != null), assert(value != null);
@@ -577,7 +574,7 @@ class Curve2DSample {
 /// smoothly from one control point to the next, passing through the control
 /// points.
 ///
-/// {@template flutter.animation.curves.catmull_rom_description}
+/// {@template flutter.animation.CatmullRomSpline}
 /// Unlike most cubic splines, Catmull-Rom splines have the advantage that their
 /// curves pass through the control points given to them. They are cubic
 /// polynomial representations, and, in fact, Catmull-Rom splines can be
@@ -624,8 +621,8 @@ class CatmullRomSpline extends Curve2D {
   CatmullRomSpline(
       List<Offset> controlPoints, {
         double tension = 0.0,
-        Offset startHandle,
-        Offset endHandle,
+        Offset? startHandle,
+        Offset? endHandle,
       }) : assert(controlPoints != null),
            assert(tension != null),
            assert(tension <= 1.0, 'tension $tension must not be greater than 1.0.'),
@@ -644,8 +641,8 @@ class CatmullRomSpline extends Curve2D {
   CatmullRomSpline.precompute(
       List<Offset> controlPoints, {
         double tension = 0.0,
-        Offset startHandle,
-        Offset endHandle,
+        Offset? startHandle,
+        Offset? endHandle,
       }) : assert(controlPoints != null),
            assert(tension != null),
            assert(tension <= 1.0, 'tension $tension must not be greater than 1.0.'),
@@ -661,8 +658,8 @@ class CatmullRomSpline extends Curve2D {
   static List<List<Offset>> _computeSegments(
       List<Offset> controlPoints,
       double tension, {
-      Offset startHandle,
-      Offset endHandle,
+      Offset? startHandle,
+      Offset? endHandle,
     }) {
     // If not specified, select the first and last control points (which are
     // handles: they are not intersected by the resulting curve) so that they
@@ -711,17 +708,17 @@ class CatmullRomSpline extends Curve2D {
   final List<List<Offset>> _cubicSegments;
 
   // This is non-empty only if the _cubicSegments are being computed lazily.
-  final List<Offset> _controlPoints;
-  final Offset _startHandle;
-  final Offset _endHandle;
-  final double _tension;
+  final List<Offset>? _controlPoints;
+  final Offset? _startHandle;
+  final Offset? _endHandle;
+  final double? _tension;
 
   void _initializeIfNeeded() {
     if (_cubicSegments.isNotEmpty) {
       return;
     }
     _cubicSegments.addAll(
-      _computeSegments(_controlPoints, _tension, startHandle: _startHandle, endHandle: _endHandle),
+      _computeSegments(_controlPoints!, _tension!, startHandle: _startHandle, endHandle: _endHandle),
     );
   }
 
@@ -737,9 +734,9 @@ class CatmullRomSpline extends Curve2D {
   Offset transformInternal(double t) {
     _initializeIfNeeded();
     final double length = _cubicSegments.length.toDouble();
-    double position;
-    double localT;
-    int index;
+    final double position;
+    final double localT;
+    final int index;
     if (t < 1.0) {
       position = t * length;
       localT = position % 1.0;
@@ -765,7 +762,7 @@ class CatmullRomSpline extends Curve2D {
 /// smoothly from one control point to the next, passing through (0.0, 0.0), the
 /// given points, and then (1.0, 1.0).
 ///
-/// {@macro flutter.animation.curves.catmull_rom_description}
+/// {@macro flutter.animation.CatmullRomSpline}
 ///
 /// This class uses a centripetal Catmull-Rom curve (a [CatmullRomSpline]) as
 /// its internal representation. The term centripetal implies that it won't form
@@ -903,9 +900,9 @@ class CatmullRomCurve extends Curve {
   /// In release mode, this function can be used to decide if a proposed
   /// modification to the curve will result in a valid curve.
   static bool validateControlPoints(
-      List<Offset> controlPoints, {
+      List<Offset>? controlPoints, {
       double tension = 0.0,
-      List<String> reasons,
+      List<String>? reasons,
     }) {
     assert(tension != null);
     if (controlPoints == null) {
@@ -935,7 +932,7 @@ class CatmullRomCurve extends Curve {
           (controlPoints[i].dx <= 0.0 || controlPoints[i].dx >= 1.0)) {
         assert(() {
           reasons?.add('Control points must have X values between 0.0 and 1.0, exclusive. '
-              'Point $i has an x value (${controlPoints[i].dx}) which is outside the range.');
+              'Point $i has an x value (${controlPoints![i].dx}) which is outside the range.');
           return true;
         }());
         return false;
@@ -944,7 +941,7 @@ class CatmullRomCurve extends Curve {
         assert(() {
           reasons?.add('Each X coordinate must be greater than the preceding X coordinate '
               '(i.e. must be monotonically increasing in X). Point $i has an x value of '
-              '${controlPoints[i].dx}, which is not greater than $lastX');
+              '${controlPoints![i].dx}, which is not greater than $lastX');
           return true;
         }());
         return false;
@@ -1051,7 +1048,7 @@ class CatmullRomCurve extends Curve {
 
     // Now interpolate between the found sample and the next one.
     final double t2 = (t - startValue.dx) / (endValue.dx - startValue.dx);
-    return lerpDouble(startValue.dy, endValue.dy, t2);
+    return lerpDouble(startValue.dy, endValue.dy, t2)!;
   }
 }
 
@@ -1188,7 +1185,7 @@ class ElasticInCurve extends Curve {
   double transformInternal(double t) {
     final double s = period / 4.0;
     t = t - 1.0;
-    return -math.pow(2.0, 10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period) as double;
+    return -math.pow(2.0, 10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period);
   }
 
   @override
@@ -1215,7 +1212,7 @@ class ElasticOutCurve extends Curve {
   @override
   double transformInternal(double t) {
     final double s = period / 4.0;
-    return math.pow(2.0, -10 * t) * math.sin((t - s) * (math.pi * 2.0) / period) + 1.0 as double;
+    return math.pow(2.0, -10 * t) * math.sin((t - s) * (math.pi * 2.0) / period) + 1.0;
   }
 
   @override
@@ -1247,7 +1244,7 @@ class ElasticInOutCurve extends Curve {
     if (t < 0.0)
       return -0.5 * math.pow(2.0, 10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period);
     else
-      return math.pow(2.0, -10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period) * 0.5 + 1.0 as double;
+      return math.pow(2.0, -10.0 * t) * math.sin((t - s) * (math.pi * 2.0) / period) * 0.5 + 1.0;
   }
 
   @override

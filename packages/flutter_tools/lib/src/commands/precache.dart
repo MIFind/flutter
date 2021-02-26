@@ -2,33 +2,47 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
+// @dart = 2.8
+
+import 'package:meta/meta.dart';
 
 import '../base/common.dart';
+import '../base/logger.dart';
+import '../base/platform.dart';
 import '../cache.dart';
 import '../features.dart';
-import '../globals.dart' as globals;
 import '../runner/flutter_command.dart';
 
+/// The flutter precache command allows downloading of cache artifacts without
+/// the use of device/artifact autodetection.
 class PrecacheCommand extends FlutterCommand {
-  PrecacheCommand({bool verboseHelp = false}) {
+  PrecacheCommand({
+    bool verboseHelp = false,
+    @required Cache cache,
+    @required Platform platform,
+    @required Logger logger,
+    @required FeatureFlags featureFlags,
+  }) : _cache = cache,
+       _platform = platform,
+       _logger = logger,
+       _featureFlags = featureFlags {
     argParser.addFlag('all-platforms', abbr: 'a', negatable: false,
         help: 'Precache artifacts for all host platforms.');
     argParser.addFlag('force', abbr: 'f', negatable: false,
-        help: 'Force downloading of artifacts.');
-    argParser.addFlag('android', negatable: true, defaultsTo: true,
+        help: 'Force re-downloading of artifacts.');
+    argParser.addFlag('android', negatable: true, defaultsTo: false,
         help: 'Precache artifacts for Android development.',
-        hide: verboseHelp);
-    argParser.addFlag('android_gen_snapshot', negatable: true, defaultsTo: true,
+        hide: !verboseHelp);
+    argParser.addFlag('android_gen_snapshot', negatable: true, defaultsTo: false,
         help: 'Precache gen_snapshot for Android development.',
         hide: !verboseHelp);
-    argParser.addFlag('android_maven', negatable: true, defaultsTo: true,
+    argParser.addFlag('android_maven', negatable: true, defaultsTo: false,
         help: 'Precache Gradle dependencies for Android development.',
         hide: !verboseHelp);
     argParser.addFlag('android_internal_build', negatable: true, defaultsTo: false,
         help: 'Precache dependencies for internal Android development.',
         hide: !verboseHelp);
-    argParser.addFlag('ios', negatable: true, defaultsTo: true,
+    argParser.addFlag('ios', negatable: true, defaultsTo: false,
         help: 'Precache artifacts for iOS development.');
     argParser.addFlag('web', negatable: true, defaultsTo: false,
         help: 'Precache artifacts for web development.');
@@ -43,16 +57,23 @@ class PrecacheCommand extends FlutterCommand {
     argParser.addFlag('universal', negatable: true, defaultsTo: true,
         help: 'Precache artifacts required for any development platform.');
     argParser.addFlag('flutter_runner', negatable: true, defaultsTo: false,
-        help: 'Precache the flutter runner artifacts.', hide: true);
+        help: 'Precache the flutter runner artifacts.', hide: !verboseHelp);
     argParser.addFlag('use-unsigned-mac-binaries', negatable: true, defaultsTo: false,
-        help: 'Precache the unsigned mac binaries when available.', hide: true);
+        help: 'Precache the unsigned macOS binaries when available.', hide: !verboseHelp);
   }
+
+  final Cache _cache;
+  final Logger _logger;
+  final Platform _platform;
+  final FeatureFlags _featureFlags;
 
   @override
   final String name = 'precache';
 
   @override
-  final String description = "Populates the Flutter tool's cache of binary artifacts.";
+  final String description = "Populate the Flutter tool's cache of binary artifacts.\n\n"
+    'If no explicit platform flags are provided, this command will download the artifacts '
+    'for all currently enabled platforms';
 
   @override
   bool get shouldUpdateCache => false;
@@ -111,35 +132,43 @@ class PrecacheCommand extends FlutterCommand {
 
   @override
   Future<FlutterCommandResult> runCommand() async {
+    // Re-lock the cache.
+    if (_platform.environment['FLUTTER_ALREADY_LOCKED'] != 'true') {
+      await _cache.lock();
+    }
+    if (boolArg('force')) {
+      _cache.clearStampFiles();
+    }
+
     final bool includeAllPlatforms = boolArg('all-platforms');
     if (includeAllPlatforms) {
-      globals.cache.includeAllPlatforms = true;
+      _cache.includeAllPlatforms = true;
     }
     if (boolArg('use-unsigned-mac-binaries')) {
-      globals.cache.useUnsignedMacBinaries = true;
+      _cache.useUnsignedMacBinaries = true;
     }
-    globals.cache.platformOverrideArtifacts = _explicitArtifactSelections();
+    final Set<String> explicitlyEnabled = _explicitArtifactSelections();
+    _cache.platformOverrideArtifacts = explicitlyEnabled;
+
+    // If the user did not provide any artifact flags, then download
+    // all artifacts that correspond to an enabled platform.
+    final bool downloadDefaultArtifacts = explicitlyEnabled.isEmpty;
     final Map<String, String> umbrellaForArtifact = _umbrellaForArtifactMap();
     final Set<DevelopmentArtifact> requiredArtifacts = <DevelopmentArtifact>{};
     for (final DevelopmentArtifact artifact in DevelopmentArtifact.values) {
-      // Don't include unstable artifacts on stable branches.
-      if (!globals.flutterVersion.isMaster && artifact.unstable) {
-        continue;
-      }
-      if (artifact.feature != null && !featureFlags.isEnabled(artifact.feature)) {
+      if (artifact.feature != null && !_featureFlags.isEnabled(artifact.feature)) {
         continue;
       }
 
       final String argumentName = umbrellaForArtifact[artifact.name] ?? artifact.name;
-      if (includeAllPlatforms || boolArg(argumentName)) {
+      if (includeAllPlatforms || boolArg(argumentName) || downloadDefaultArtifacts) {
         requiredArtifacts.add(artifact);
       }
     }
-    final bool forceUpdate = boolArg('force');
-    if (forceUpdate || !globals.cache.isUpToDate()) {
-      await globals.cache.updateAll(requiredArtifacts);
+    if (!await _cache.isUpToDate()) {
+      await _cache.updateAll(requiredArtifacts);
     } else {
-      globals.printStatus('Already up-to-date.');
+      _logger.printStatus('Already up-to-date.');
     }
     return FlutterCommandResult.success();
   }

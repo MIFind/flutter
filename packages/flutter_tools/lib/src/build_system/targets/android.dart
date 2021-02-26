@@ -2,17 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import '../../artifacts.dart';
 import '../../base/build.dart';
+import '../../base/deferred_component.dart';
 import '../../base/file_system.dart';
 import '../../build_info.dart';
-import '../../devfs.dart';
-import '../../globals.dart' as globals;
+import '../../globals.dart' as globals hide fs, artifacts, logger, processManager;
 import '../build_system.dart';
 import '../depfile.dart';
 import '../exceptions.dart';
 import 'assets.dart';
-import 'dart.dart';
+import 'common.dart';
 import 'icon_tree_shaker.dart';
 
 /// Prepares the asset bundle in the format expected by flutter.gradle.
@@ -35,11 +37,9 @@ abstract class AndroidAssetBundle extends Target {
 
   @override
   List<String> get depfiles => <String>[
-    if (_copyAssets)
-      'flutter_assets.d',
+    'flutter_assets.d',
   ];
 
-  bool get _copyAssets => true;
 
   @override
   Future<void> build(Environment environment) async {
@@ -53,46 +53,28 @@ abstract class AndroidAssetBundle extends Target {
 
     // Only copy the prebuilt runtimes and kernel blob in debug mode.
     if (buildMode == BuildMode.debug) {
-      final String vmSnapshotData = globals.artifacts.getArtifactPath(Artifact.vmSnapshotData, mode: BuildMode.debug);
-      final String isolateSnapshotData = globals.artifacts.getArtifactPath(Artifact.isolateSnapshotData, mode: BuildMode.debug);
+      final String vmSnapshotData = environment.artifacts.getArtifactPath(Artifact.vmSnapshotData, mode: BuildMode.debug);
+      final String isolateSnapshotData = environment.artifacts.getArtifactPath(Artifact.isolateSnapshotData, mode: BuildMode.debug);
       environment.buildDir.childFile('app.dill')
           .copySync(outputDirectory.childFile('kernel_blob.bin').path);
-      globals.fs.file(vmSnapshotData)
+      environment.fileSystem.file(vmSnapshotData)
           .copySync(outputDirectory.childFile('vm_snapshot_data').path);
-      globals.fs.file(isolateSnapshotData)
+      environment.fileSystem.file(isolateSnapshotData)
           .copySync(outputDirectory.childFile('isolate_snapshot_data').path);
     }
-    if (_copyAssets) {
-      final String shaderBundlePath = environment.inputs[kBundleSkSLPath];
-      final DevFSContent skslBundle = processSkSLBundle(
-        shaderBundlePath,
-        engineVersion: environment.engineVersion,
-        fileSystem: environment.fileSystem,
-        logger: environment.logger,
-        targetPlatform: TargetPlatform.android,
-      );
-      final Depfile assetDepfile = await copyAssets(
-        environment,
-        outputDirectory,
-        additionalContent: <String, DevFSContent>{
-          if (skslBundle != null)
-            kSkSLShaderBundlePath: skslBundle,
-        }
-      );
-      if (shaderBundlePath != null) {
-        final File skSLBundleFile = environment.fileSystem
-          .file(shaderBundlePath).absolute;
-        assetDepfile.inputs.add(skSLBundleFile);
-      }
-      final DepfileService depfileService = DepfileService(
-        fileSystem: globals.fs,
-        logger: globals.logger,
-      );
-      depfileService.writeToFile(
-        assetDepfile,
-        environment.buildDir.childFile('flutter_assets.d'),
-      );
-    }
+    final Depfile assetDepfile = await copyAssets(
+      environment,
+      outputDirectory,
+      targetPlatform: TargetPlatform.android,
+    );
+    final DepfileService depfileService = DepfileService(
+      fileSystem: environment.fileSystem,
+      logger: environment.logger,
+    );
+    depfileService.writeToFile(
+      assetDepfile,
+      environment.buildDir.childFile('flutter_assets.d'),
+    );
   }
 
   @override
@@ -123,17 +105,6 @@ class DebugAndroidApplication extends AndroidAssetBundle {
     const Source.pattern('{OUTPUT_DIR}/flutter_assets/isolate_snapshot_data'),
     const Source.pattern('{OUTPUT_DIR}/flutter_assets/kernel_blob.bin'),
   ];
-}
-
-/// A minimal android application that does not include assets.
-class FastStartAndroidApplication extends DebugAndroidApplication {
-  const FastStartAndroidApplication();
-
-  @override
-  String get name => 'faststart_android_application';
-
-  @override
-  bool get _copyAssets => false;
 }
 
 /// An implementation of [AndroidAssetBundle] that only includes assets.
@@ -202,14 +173,13 @@ class AndroidAot extends AotElfBase {
 
   /// The selected build mode.
   ///
-  /// This is restricted to [BuildMode.profile] or [BuildMode.relese].
+  /// This is restricted to [BuildMode.profile] or [BuildMode.release].
   final BuildMode buildMode;
 
   @override
   List<Source> get inputs => <Source>[
-    const Source.pattern('{FLUTTER_ROOT}/packages/flutter_tools/lib/src/build_system/targets/dart.dart'),
+    const Source.pattern('{FLUTTER_ROOT}/packages/flutter_tools/lib/src/build_system/targets/android.dart'),
     const Source.pattern('{BUILD_DIR}/app.dill'),
-    const Source.pattern('{PROJECT_DIR}/.packages'),
     const Source.artifact(Artifact.engineDartBinary),
     const Source.artifact(Artifact.skyEnginePath),
     Source.artifact(Artifact.genSnapshot,
@@ -232,11 +202,11 @@ class AndroidAot extends AotElfBase {
   Future<void> build(Environment environment) async {
     final AOTSnapshotter snapshotter = AOTSnapshotter(
       reportTimings: false,
-      fileSystem: globals.fs,
-      logger: globals.logger,
+      fileSystem: environment.fileSystem,
+      logger: environment.logger,
       xcode: globals.xcode,
-      processManager: globals.processManager,
-      artifacts: globals.artifacts,
+      processManager: environment.processManager,
+      artifacts: environment.artifacts,
     );
     final Directory output = environment.buildDir.childDirectory(_androidAbiName);
     final String splitDebugInfo = environment.defines[kSplitDebugInfo];
@@ -246,15 +216,26 @@ class AndroidAot extends AotElfBase {
     if (!output.existsSync()) {
       output.createSync(recursive: true);
     }
-    final List<String> extraGenSnapshotOptions = environment.defines[kExtraGenSnapshotOptions]?.split(',')
-      ?? const <String>[];
+    final List<String> extraGenSnapshotOptions = decodeCommaSeparated(environment.defines, kExtraGenSnapshotOptions);
     final BuildMode buildMode = getBuildModeForName(environment.defines[kBuildMode]);
     final bool dartObfuscation = environment.defines[kDartObfuscation] == 'true';
+    final String codeSizeDirectory = environment.defines[kCodeSizeDirectory];
+
+    if (codeSizeDirectory != null) {
+      final File codeSizeFile = environment.fileSystem
+        .directory(codeSizeDirectory)
+        .childFile('snapshot.$_androidAbiName.json');
+      final File precompilerTraceFile = environment.fileSystem
+        .directory(codeSizeDirectory)
+        .childFile('trace.$_androidAbiName.json');
+      extraGenSnapshotOptions.add('--write-v8-snapshot-profile-to=${codeSizeFile.path}');
+      extraGenSnapshotOptions.add('--trace-precompiler-to=${precompilerTraceFile.path}');
+    }
+
     final int snapshotExitCode = await snapshotter.build(
       platform: targetPlatform,
       buildMode: buildMode,
       mainPath: environment.buildDir.childFile('app.dill').path,
-      packagesPath: environment.projectDir.childFile('.packages').path,
       outputPath: output.path,
       bitcode: false,
       extraGenSnapshotOptions: extraGenSnapshotOptions,
@@ -331,3 +312,79 @@ const Target androidx64ProfileBundle = AndroidAotBundle(androidx64Profile);
 const Target androidArmReleaseBundle = AndroidAotBundle(androidArmRelease);
 const Target androidArm64ReleaseBundle = AndroidAotBundle(androidArm64Release);
 const Target androidx64ReleaseBundle = AndroidAotBundle(androidx64Release);
+
+/// Utility method to copy and rename the required .so shared libs from the build output
+/// to the correct component intermediate directory.
+///
+/// The [DeferredComponent]s passed to this method must have had loading units assigned.
+/// Assigned components are components that have determined which loading units contains
+/// the dart libraries it has via the DeferredComponent.assignLoadingUnits method.
+Depfile copyDeferredComponentSoFiles(
+    Environment env,
+    List<DeferredComponent> components,
+    List<LoadingUnit> loadingUnits,
+    Directory buildDir, // generally `<projectDir>/build`
+    List<String> abis,
+    BuildMode buildMode,) {
+  final List<File> inputs = <File>[];
+  final List<File> outputs = <File>[];
+  final Set<int> usedLoadingUnits = <int>{};
+  // Copy all .so files for loading units that are paired with a deferred component.
+  for (final String abi in abis) {
+    for (final DeferredComponent component in components) {
+      if (!component.assigned) {
+        globals.printError('Deferred component require loading units to be assigned.');
+        return Depfile(inputs, outputs);
+      }
+      for (final LoadingUnit unit in component.loadingUnits) {
+        // ensure the abi for the unit is one of the abis we build for.
+        final List<String> splitPath = unit.path.split(env.fileSystem.path.separator);
+        if (splitPath[splitPath.length - 2] != abi) {
+          continue;
+        }
+        usedLoadingUnits.add(unit.id);
+        // the deferred_libs directory is added as a source set for the component.
+        final File destination = buildDir
+            .childDirectory(component.name)
+            .childDirectory('intermediates')
+            .childDirectory('flutter')
+            .childDirectory(buildMode.name)
+            .childDirectory('deferred_libs')
+            .childDirectory(abi)
+            .childFile('libapp.so-${unit.id}.part.so');
+        if (!destination.existsSync()) {
+          destination.createSync(recursive: true);
+        }
+        final File source = env.fileSystem.file(unit.path);
+        source.copySync(destination.path);
+        inputs.add(source);
+        outputs.add(destination);
+      }
+    }
+  }
+  // Copy unused loading units, which are included in the base module.
+  for (final String abi in abis) {
+    for (final LoadingUnit unit in loadingUnits) {
+      if (usedLoadingUnits.contains(unit.id)) {
+        continue;
+      }
+        // ensure the abi for the unit is one of the abis we build for.
+      final List<String> splitPath = unit.path.split(env.fileSystem.path.separator);
+      if (splitPath[splitPath.length - 2] != abi) {
+        continue;
+      }
+      final File destination = env.outputDir
+          .childDirectory(abi)
+          // Omit 'lib' prefix here as it is added by the gradle task that adds 'lib' to 'app.so'.
+          .childFile('app.so-${unit.id}.part.so');
+      if (!destination.existsSync()) {
+          destination.createSync(recursive: true);
+        }
+      final File source = env.fileSystem.file(unit.path);
+      source.copySync(destination.path);
+      inputs.add(source);
+      outputs.add(destination);
+    }
+  }
+  return Depfile(inputs, outputs);
+}

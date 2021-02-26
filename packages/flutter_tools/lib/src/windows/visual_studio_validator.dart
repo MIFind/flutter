@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:meta/meta.dart';
 
 import '../base/context.dart';
@@ -44,6 +46,11 @@ class VisualStudioValidator extends DoctorValidator {
         messages.add(ValidationMessage(_userMessages.visualStudioIsPrerelease));
       }
 
+      final String windows10SdkVersion = _visualStudio.getWindows10SDKVersion();
+      if (windows10SdkVersion != null) {
+        messages.add(ValidationMessage(_userMessages.windows10SdkVersion(windows10SdkVersion)));
+      }
+
       // Messages for faulty installations.
       if (!_visualStudio.isAtLeastMinimumVersion) {
         status = ValidationType.partial;
@@ -51,7 +58,6 @@ class VisualStudioValidator extends DoctorValidator {
             _userMessages.visualStudioTooOld(
                 _visualStudio.minimumVersionDescription,
                 _visualStudio.workloadDescription,
-                _visualStudio.necessaryComponentDescriptions(),
             ),
         ));
       } else if (_visualStudio.isRebootRequired) {
@@ -71,6 +77,9 @@ class VisualStudioValidator extends DoctorValidator {
                 _visualStudio.necessaryComponentDescriptions(),
             ),
         ));
+      } else if (windows10SdkVersion == null) {
+        status = ValidationType.partial;
+        messages.add(ValidationMessage.hint(_userMessages.windows10SdkNotFound));
       }
       versionInfo = '${_visualStudio.displayName} ${_visualStudio.displayVersion}';
     } else {
@@ -78,7 +87,6 @@ class VisualStudioValidator extends DoctorValidator {
       messages.add(ValidationMessage.error(
         _userMessages.visualStudioMissing(
           _visualStudio.workloadDescription,
-          _visualStudio.necessaryComponentDescriptions(),
         ),
       ));
     }

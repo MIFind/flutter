@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:io' as io show Platform, stdin, stdout;
 
 /// Provides API parity with the `Platform` class in `dart:io`, but using
@@ -43,7 +45,7 @@ abstract class Platform {
   /// True if the operating system is iOS.
   bool get isIOS => operatingSystem == 'ios';
 
-  /// True if the operating system is Fuchsia
+  /// True if the operating system is Fuchsia.
   bool get isFuchsia => operatingSystem == 'fuchsia';
 
   /// The environment for this process.

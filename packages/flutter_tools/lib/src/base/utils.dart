@@ -2,14 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:async';
-import 'dart:math' show max;
+import 'dart:math' as math;
 
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
 
 import '../convert.dart';
-import '../globals.dart' as globals;
 import 'file_system.dart';
 
 /// Convert `foo_bar` to `fooBar`.
@@ -104,6 +105,12 @@ class ItemListNotifier<T> {
     removedItems.forEach(_removedController.add);
   }
 
+  void removeItem(T item) {
+    if (_items.remove(item)) {
+      _removedController.add(item);
+    }
+  }
+
   /// Close the streams.
   void dispose() {
     _addedController.close();
@@ -148,28 +155,16 @@ Map<String, dynamic> castStringKeyedMap(dynamic untyped) {
   return map?.cast<String, dynamic>();
 }
 
-typedef AsyncCallback = Future<void> Function();
-
-/// Returns a [Future] that completes when all given [Future]s complete.
-///
-/// Uses [Future.wait] but removes null elements from the provided
-/// `futures` iterable first.
-///
-/// The returned [Future<List>] will be shorter than the given `futures` if
-/// it contains nulls.
-Future<List<T>> waitGroup<T>(Iterable<Future<T>> futures) {
-  return Future.wait<T>(futures.where((Future<T> future) => future != null));
-}
-
 /// Smallest column that will be used for text wrapping. If the requested column
 /// width is smaller than this, then this is what will be used.
 const int kMinColumnWidth = 10;
 
 /// Wraps a block of text into lines no longer than [columnWidth].
 ///
-/// Tries to split at whitespace, but if that's not good enough to keep it
-/// under the limit, then it splits in the middle of a word. If [columnWidth] is
-/// smaller than 10 columns, will wrap at 10 columns.
+/// Tries to split at whitespace, but if that's not good enough to keep it under
+/// the limit, then it splits in the middle of a word. If [columnWidth] (minus
+/// any indent) is smaller than [kMinColumnWidth], the text is wrapped at that
+/// [kMinColumnWidth] instead.
 ///
 /// Preserves indentation (leading whitespace) for each line (delimited by '\n')
 /// in the input, and will indent wrapped lines that same amount, adding
@@ -198,17 +193,20 @@ const int kMinColumnWidth = 10;
 /// unchanged. If [shouldWrap] is specified, then it overrides the
 /// [outputPreferences.wrapText] setting.
 ///
-/// The [indent] and [hangingIndent] must be smaller than [columnWidth] when
-/// added together.
-String wrapText(String text, { int columnWidth, int hangingIndent, int indent, bool shouldWrap }) {
+/// If the amount of indentation (from the text, [indent], and [hangingIndent])
+/// is such that less than [kMinColumnWidth] characters can fit in the
+/// [columnWidth], then the indent is truncated to allow the text to fit.
+String wrapText(String text, {
+  @required int columnWidth,
+  @required bool shouldWrap,
+  int hangingIndent,
+  int indent,
+}) {
+  assert(columnWidth >= 0);
   if (text == null || text.isEmpty) {
     return '';
   }
   indent ??= 0;
-  columnWidth ??= globals.outputPreferences.wrapColumn;
-  columnWidth -= indent;
-  assert(columnWidth >= 0);
-
   hangingIndent ??= 0;
   final List<String> splitText = text.split('\n');
   final List<String> result = <String>[];
@@ -222,34 +220,38 @@ String wrapText(String text, { int columnWidth, int hangingIndent, int indent, b
       // them twice and recombine.
       final List<String> firstLineWrap = _wrapTextAsLines(
         trimmedText,
-        columnWidth: columnWidth - leadingWhitespace.length,
+        columnWidth: columnWidth - leadingWhitespace.length - indent,
         shouldWrap: shouldWrap,
       );
       notIndented = <String>[firstLineWrap.removeAt(0)];
       trimmedText = trimmedText.substring(notIndented[0].length).trimLeft();
-      if (firstLineWrap.isNotEmpty) {
+      if (trimmedText.isNotEmpty) {
         notIndented.addAll(_wrapTextAsLines(
           trimmedText,
-          columnWidth: columnWidth - leadingWhitespace.length - hangingIndent,
+          columnWidth: columnWidth - leadingWhitespace.length - indent - hangingIndent,
           shouldWrap: shouldWrap,
         ));
       }
     } else {
       notIndented = _wrapTextAsLines(
         trimmedText,
-        columnWidth: columnWidth - leadingWhitespace.length,
+        columnWidth: columnWidth - leadingWhitespace.length - indent,
         shouldWrap: shouldWrap,
       );
     }
     String hangingIndentString;
     final String indentString = ' ' * indent;
-    result.addAll(notIndented.map(
+    result.addAll(notIndented.map<String>(
       (String line) {
         // Don't return any lines with just whitespace on them.
         if (line.isEmpty) {
           return '';
         }
-        final String result = '$indentString${hangingIndentString ?? ''}$leadingWhitespace$line';
+        String truncatedIndent = '$indentString${hangingIndentString ?? ''}$leadingWhitespace';
+        if (truncatedIndent.length > columnWidth - kMinColumnWidth) {
+          truncatedIndent = truncatedIndent.substring(0, math.max(columnWidth - kMinColumnWidth, 0));
+        }
+        final String result = '$truncatedIndent$line';
         hangingIndentString ??= ' ' * hangingIndent;
         return result;
       },
@@ -278,37 +280,22 @@ class _AnsiRun {
 /// terminal window by default. If the stdout is not a terminal window, then the
 /// default will be [outputPreferences.wrapColumn].
 ///
+/// The [columnWidth] is clamped to [kMinColumnWidth] at minimum (so passing negative
+/// widths is fine, for instance).
+///
 /// If [outputPreferences.wrapText] is false, then the text will be returned
 /// simply split at the newlines, but not wrapped. If [shouldWrap] is specified,
 /// then it overrides the [outputPreferences.wrapText] setting.
-List<String> _wrapTextAsLines(String text, { int start = 0, int columnWidth, @required bool shouldWrap }) {
+List<String> _wrapTextAsLines(String text, {
+  int start = 0,
+  int columnWidth,
+  @required bool shouldWrap,
+}) {
   if (text == null || text.isEmpty) {
     return <String>[''];
   }
   assert(columnWidth != null);
-  assert(columnWidth >= 0);
   assert(start >= 0);
-  shouldWrap ??= globals.outputPreferences.wrapText;
-
-  /// Returns true if the code unit at [index] in [text] is a whitespace
-  /// character.
-  ///
-  /// Based on: https://en.wikipedia.org/wiki/Whitespace_character#Unicode
-  bool isWhitespace(_AnsiRun run) {
-    final int rune = run.character.isNotEmpty ? run.character.codeUnitAt(0) : 0x0;
-    return rune >= 0x0009 && rune <= 0x000D ||
-        rune == 0x0020 ||
-        rune == 0x0085 ||
-        rune == 0x1680 ||
-        rune == 0x180E ||
-        rune >= 0x2000 && rune <= 0x200A ||
-        rune == 0x2028 ||
-        rune == 0x2029 ||
-        rune == 0x202F ||
-        rune == 0x205F ||
-        rune == 0x3000 ||
-        rune == 0xFEFF;
-  }
 
   // Splits a string so that the resulting list has the same number of elements
   // as there are visible characters in the string, but elements may include one
@@ -346,7 +333,7 @@ List<String> _wrapTextAsLines(String text, { int start = 0, int columnWidth, @re
   }
 
   final List<String> result = <String>[];
-  final int effectiveLength = max(columnWidth - start, kMinColumnWidth);
+  final int effectiveLength = math.max(columnWidth - start, kMinColumnWidth);
   for (final String line in text.split('\n')) {
     // If the line is short enough, even with ANSI codes, then we can just add
     // add it and move on.
@@ -389,4 +376,24 @@ List<String> _wrapTextAsLines(String text, { int start = 0, int columnWidth, @re
     result.add(joinRun(splitLine, currentLineStart));
   }
   return result;
+}
+
+/// Returns true if the code unit at [index] in [text] is a whitespace
+/// character.
+///
+/// Based on: https://en.wikipedia.org/wiki/Whitespace_character#Unicode
+bool isWhitespace(_AnsiRun run) {
+  final int rune = run.character.isNotEmpty ? run.character.codeUnitAt(0) : 0x0;
+  return rune >= 0x0009 && rune <= 0x000D ||
+      rune == 0x0020 ||
+      rune == 0x0085 ||
+      rune == 0x1680 ||
+      rune == 0x180E ||
+      rune >= 0x2000 && rune <= 0x200A ||
+      rune == 0x2028 ||
+      rune == 0x2029 ||
+      rune == 0x202F ||
+      rune == 0x205F ||
+      rune == 0x3000 ||
+      rune == 0xFEFF;
 }

@@ -23,7 +23,7 @@ void main() {
           home: Builder(
             builder: (BuildContext context) {
               const String character = '骨';
-              final TextStyle style = Theme.of(context).textTheme.headline2;
+              final TextStyle style = Theme.of(context).textTheme.headline2!;
               return Scaffold(
                 body: Container(
                   padding: const EdgeInsets.all(48.0),
@@ -67,7 +67,7 @@ void main() {
           home: Builder(
             builder: (BuildContext context) {
               const String character = '骨';
-              final TextStyle style = Theme.of(context).textTheme.headline2;
+              final TextStyle style = Theme.of(context).textTheme.headline2!;
               return Scaffold(
                 body: Container(
                   padding: const EdgeInsets.all(48.0),
@@ -103,7 +103,6 @@ void main() {
         matchesGoldenFile('localized_fonts.text_ambient_locale.chars.png'),
       );
     },
-    skip: isBrowser, // TODO(yjbanov): implement goldens on the Web: https://github.com/flutter/flutter/issues/40297
   );
 
   testWidgets(
@@ -119,7 +118,7 @@ void main() {
           home: Builder(
             builder: (BuildContext context) {
               const String character = '骨';
-              final TextStyle style = Theme.of(context).textTheme.headline2;
+              final TextStyle style = Theme.of(context).textTheme.headline2!;
               return Scaffold(
                 body: Container(
                   padding: const EdgeInsets.all(48.0),
@@ -147,7 +146,6 @@ void main() {
         matchesGoldenFile('localized_fonts.text_explicit_locale.chars.png'),
       );
     },
-    skip: isBrowser, // TODO(yjbanov): implement goldens on the Web: https://github.com/flutter/flutter/issues/40297
   );
 
 }

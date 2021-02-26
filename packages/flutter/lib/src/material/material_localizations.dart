@@ -2,13 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import 'reorderable_list.dart';
-import 'text_theme.dart';
+import 'debug.dart';
 import 'time.dart';
 import 'typography.dart';
 
@@ -47,6 +44,33 @@ import 'typography.dart';
 //
 // 5. If you are a Google employee, you should then also follow the instructions
 //    at go/flutter-l10n. If you're not, don't worry about it.
+//
+// UPDATING AN EXISTING STRING
+//
+// If you (someone contributing to the Flutter framework) want to modify an
+// existing string in the MaterialLocalizations objects, follow these steps:
+//
+// 1. Modify the default value of the relevant getter(s) in
+//    DefaultMaterialLocalizations below.
+//
+// 2. Update the flutter_localizations package. Modify the out-of-date English
+//    strings in lib/src/l10n/material_en.arb.
+//
+//    You also need to re-generate lib/src/l10n/localizations.dart by running:
+//    ```
+//    dart dev/tools/localization/bin/gen_localizations.dart --overwrite
+//    ```
+//
+//    This script may result in your updated getters being created in newer
+//    locales and set to the old value of the strings. This is to be expected.
+//    Leave them as they were generated, and they will be picked up for
+//    translation.
+//
+//    There is a README file with further information in the lib/src/l10n/
+//    directory.
+//
+// 3. If you are a Google employee, you should then also follow the instructions
+//    at go/flutter-l10n. If you're not, don't worry about it.
 
 /// Defines the localized resource values used by the Material widgets.
 ///
@@ -78,6 +102,12 @@ abstract class MaterialLocalizations {
   /// The tooltip for the [MonthPicker]'s "previous month" button.
   String get previousMonthTooltip;
 
+  /// The tooltip for the [PaginatedDataTable]'s "first page" button.
+  String get firstPageTooltip;
+
+  /// The tooltip for the [PaginatedDataTable]'s "last page" button.
+  String get lastPageTooltip;
+
   /// The tooltip for the [PaginatedDataTable]'s "next page" button.
   String get nextPageTooltip;
 
@@ -93,6 +123,9 @@ abstract class MaterialLocalizations {
   /// Title for the [LicensePage] widget.
   String get licensesPageTitle;
 
+  /// Subtitle for a package in the [LicensePage] widget.
+  String licensesPackageDetailText(int licenseCount);
+
   /// Title for the [PaginatedDataTable]'s row info footer.
   String pageRowsInfoTitle(int firstRow, int lastRow, int rowCount, bool rowCountIsApproximate);
 
@@ -105,7 +138,7 @@ abstract class MaterialLocalizations {
   /// there are, e.g. 'Tab 1 of 2' in United States English.
   ///
   /// `tabIndex` and `tabCount` must be greater than or equal to one.
-  String tabLabel({ int tabIndex, int tabCount });
+  String tabLabel({ required int tabIndex, required int tabCount });
 
   /// Title for the [PaginatedDataTable]'s selected row count header.
   String selectedRowCountTitle(int selectedRowCount);
@@ -289,7 +322,7 @@ abstract class MaterialLocalizations {
   ///
   /// See also:
   ///   * [formatCompactDate], which will convert a [DateTime] into a string in the compact format.
-  DateTime parseCompactDate(String inputString);
+  DateTime? parseCompactDate(String? inputString);
 
   /// List of week day names in narrow format, usually 1- or 2-letter
   /// abbreviations of full names.
@@ -389,6 +422,32 @@ abstract class MaterialLocalizations {
   /// Tooltip used for the text input mode button of the date pickers.
   String get inputDateModeButtonLabel;
 
+  /// Label used in the header of the time picker dialog created with
+  /// [showTimePicker] when in [TimePickerEntryMode.dial].
+  String get timePickerDialHelpText;
+
+  /// Label used in the header of the time picker dialog created with
+  /// [showTimePicker] when in [TimePickerEntryMode.input].
+  String get timePickerInputHelpText;
+
+  /// Label used below the hour text field of the time picker dialog created
+  /// with [showTimePicker] when in [TimePickerEntryMode.input].
+  String get timePickerHourLabel;
+
+  /// Label used below the minute text field of the time picker dialog created
+  /// with [showTimePicker] when in [TimePickerEntryMode.input].
+  String get timePickerMinuteLabel;
+
+  /// Error message for the time picker dialog created with [showTimePicker]
+  /// when in [TimePickerEntryMode.input].
+  String get invalidTimeLabel;
+
+  /// Tooltip used to put the time picker into [TimePickerEntryMode.dial].
+  String get dialModeButtonLabel;
+
+  /// Tooltip used to put the time picker into [TimePickerEntryMode.input].
+  String get inputTimeModeButtonLabel;
+
   /// The semantics label used to indicate which account is signed in in the
   /// [UserAccountsDrawerHeader] widget.
   String get signedInLabel;
@@ -440,8 +499,11 @@ abstract class MaterialLocalizations {
   /// The `MaterialLocalizations` from the closest [Localizations] instance
   /// that encloses the given context.
   ///
+  /// If no [MaterialLocalizations] are available in the given `context`, this
+  /// method throws an exception.
+  ///
   /// This method is just a convenient shorthand for:
-  /// `Localizations.of<MaterialLocalizations>(context, MaterialLocalizations)`.
+  /// `Localizations.of<MaterialLocalizations>(context, MaterialLocalizations)!`.
   ///
   /// References to the localized resources defined by this class are typically
   /// written in terms of this method. For example:
@@ -450,7 +512,8 @@ abstract class MaterialLocalizations {
   /// tooltip: MaterialLocalizations.of(context).backButtonTooltip,
   /// ```
   static MaterialLocalizations of(BuildContext context) {
-    return Localizations.of<MaterialLocalizations>(context, MaterialLocalizations);
+    assert(debugCheckHasMaterialLocalizations(context));
+    return Localizations.of<MaterialLocalizations>(context, MaterialLocalizations)!;
   }
 }
 
@@ -640,24 +703,28 @@ class DefaultMaterialLocalizations implements MaterialLocalizations {
   }
 
   @override
-  DateTime parseCompactDate(String inputString) {
+  DateTime? parseCompactDate(String? inputString) {
+    if (inputString == null) {
+      return null;
+    }
+
     // Assumes US mm/dd/yyyy format
     final List<String> inputParts = inputString.split('/');
     if (inputParts.length != 3) {
       return null;
     }
 
-    final int year = int.tryParse(inputParts[2], radix: 10);
+    final int? year = int.tryParse(inputParts[2], radix: 10);
     if (year == null || year < 1) {
       return null;
     }
 
-    final int month = int.tryParse(inputParts[0], radix: 10);
+    final int? month = int.tryParse(inputParts[0], radix: 10);
     if (month == null || month < 1 || month > 12) {
       return null;
     }
 
-    final int day = int.tryParse(inputParts[1], radix: 10);
+    final int? day = int.tryParse(inputParts[1], radix: 10);
     if (day == null || day < 1 || day > _getDaysInMonth(year, month)) {
       return null;
     }
@@ -724,6 +791,27 @@ class DefaultMaterialLocalizations implements MaterialLocalizations {
   @override
   String get inputDateModeButtonLabel => 'Switch to input';
 
+  @override
+  String get timePickerDialHelpText => 'SELECT TIME';
+
+  @override
+  String get timePickerInputHelpText => 'ENTER TIME';
+
+  @override
+  String get timePickerHourLabel => 'Hour';
+
+  @override
+  String get timePickerMinuteLabel => 'Minute';
+
+  @override
+  String get invalidTimeLabel => 'Enter a valid time';
+
+  @override
+  String get dialModeButtonLabel => 'Switch to dial picker mode';
+
+  @override
+  String get inputTimeModeButtonLabel => 'Switch to text input mode';
+
   String _formatDayPeriod(TimeOfDay timeOfDay) {
     switch (timeOfDay.period) {
       case DayPeriod.am:
@@ -731,7 +819,6 @@ class DefaultMaterialLocalizations implements MaterialLocalizations {
       case DayPeriod.pm:
         return postMeridiemAbbreviation;
     }
-    return null;
   }
 
   @override
@@ -808,6 +895,12 @@ class DefaultMaterialLocalizations implements MaterialLocalizations {
   String get previousPageTooltip => 'Previous page';
 
   @override
+  String get firstPageTooltip => 'First page';
+
+  @override
+  String get lastPageTooltip => 'Last page';
+
+  @override
   String get showMenuTooltip => 'Show menu';
 
   @override
@@ -832,6 +925,19 @@ class DefaultMaterialLocalizations implements MaterialLocalizations {
   String get licensesPageTitle => 'Licenses';
 
   @override
+  String licensesPackageDetailText(int licenseCount) {
+    assert (licenseCount >= 0);
+    switch (licenseCount) {
+      case 0:
+        return 'No licenses.';
+      case 1:
+        return '1 license.';
+      default:
+        return '$licenseCount licenses.';
+    }
+  }
+
+  @override
   String pageRowsInfoTitle(int firstRow, int lastRow, int rowCount, bool rowCountIsApproximate) {
     return rowCountIsApproximate
       ? '$firstRow–$lastRow of about $rowCount'
@@ -842,7 +948,7 @@ class DefaultMaterialLocalizations implements MaterialLocalizations {
   String get rowsPerPageTitle => 'Rows per page:';
 
   @override
-  String tabLabel({ int tabIndex, int tabCount }) {
+  String tabLabel({ required int tabIndex, required int tabCount }) {
     assert(tabIndex >= 1);
     assert(tabCount >= 1);
     return 'Tab $tabIndex of $tabCount';
@@ -870,19 +976,19 @@ class DefaultMaterialLocalizations implements MaterialLocalizations {
   String get continueButtonLabel => 'CONTINUE';
 
   @override
-  String get copyButtonLabel => 'COPY';
+  String get copyButtonLabel => 'Copy';
 
   @override
-  String get cutButtonLabel => 'CUT';
+  String get cutButtonLabel => 'Cut';
 
   @override
   String get okButtonLabel => 'OK';
 
   @override
-  String get pasteButtonLabel => 'PASTE';
+  String get pasteButtonLabel => 'Paste';
 
   @override
-  String get selectAllButtonLabel => 'SELECT ALL';
+  String get selectAllButtonLabel => 'Select all';
 
   @override
   String get viewLicensesButtonLabel => 'VIEW LICENSES';

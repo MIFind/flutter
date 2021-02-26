@@ -111,7 +111,7 @@ void main() {
       expect(buttonBarRect.size.width, equals(800.0));
       expect(buttonBarRect.size.height, equals(100.0));
 
-      // The children of [ButtonBar] are aligned by [MainAxisAligment.end] by
+      // The children of [ButtonBar] are aligned by [MainAxisAlignment.end] by
       // default.
       Rect childRect;
       childRect = tester.getRect(find.byKey(child0Key));
@@ -218,7 +218,7 @@ void main() {
       expect(buttonBarRect.size.width, equals(800.0));
       expect(buttonBarRect.size.height, equals(100.0));
 
-      // The children of [ButtonBar] are aligned by [MainAxisAligment.end] by
+      // The children of [ButtonBar] are aligned by [MainAxisAlignment.end] by
       // default.
       Rect childRect;
       childRect = tester.getRect(find.byKey(child0Key));
@@ -238,10 +238,10 @@ void main() {
     });
   });
 
-  group('button properies override ButtonTheme', () {
+  group('button properties override ButtonTheme', () {
 
     testWidgets('default button properties override ButtonTheme properties', (WidgetTester tester) async {
-      BuildContext capturedContext;
+      late BuildContext capturedContext;
       await tester.pumpWidget(
         MaterialApp(
           home: ButtonBar(
@@ -264,7 +264,7 @@ void main() {
     });
 
     testWidgets('ButtonBarTheme button properties override defaults and ButtonTheme properties', (WidgetTester tester) async {
-      BuildContext capturedContext;
+      late BuildContext capturedContext;
       await tester.pumpWidget(
         MaterialApp(
           home: ButtonBarTheme(
@@ -297,7 +297,7 @@ void main() {
     });
 
     testWidgets('ButtonBar button properties override ButtonBarTheme, defaults and ButtonTheme properties', (WidgetTester tester) async {
-      BuildContext capturedContext;
+      late BuildContext capturedContext;
       await tester.pumpWidget(
         MaterialApp(
           home: ButtonBarTheme(
@@ -628,7 +628,7 @@ void main() {
     );
   });
 
-  testWidgets('_RenderButtonBarRow.constraints works before layout', (WidgetTester tester) async {
+  testWidgets('_RenderButtonBarRow.constraints does not work before layout', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ButtonBar()),
       Duration.zero,
@@ -639,6 +639,6 @@ void main() {
     final RenderBox renderButtonBar = tester.renderObject(buttonBar) as RenderBox;
 
     expect(renderButtonBar.debugNeedsLayout, isTrue);
-    expect(renderButtonBar.constraints, isNull);
+    expect(() => renderButtonBar.constraints, throwsStateError);
   });
 }

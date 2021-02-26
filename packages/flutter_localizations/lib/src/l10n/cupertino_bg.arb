@@ -19,6 +19,7 @@
   "copyButtonLabel": "Копиране",
   "pasteButtonLabel": "Поставяне",
   "selectAllButtonLabel": "Избиране на всички",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Отхвърляне"
+  "tabSemanticsLabel": "Раздел $tabIndex от $tabCount",
+  "modalBarrierDismissLabel": "Отхвърляне",
+  "searchTextFieldPlaceholderLabel": "Търсене"
 }

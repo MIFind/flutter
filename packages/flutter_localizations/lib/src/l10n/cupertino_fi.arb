@@ -19,6 +19,7 @@
   "copyButtonLabel": "Kopioi",
   "pasteButtonLabel": "Liitä",
   "selectAllButtonLabel": "Valitse kaikki",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Ohita"
+  "tabSemanticsLabel": "Välilehti $tabIndex/$tabCount",
+  "modalBarrierDismissLabel": "Ohita",
+  "searchTextFieldPlaceholderLabel": "Hae"
 }

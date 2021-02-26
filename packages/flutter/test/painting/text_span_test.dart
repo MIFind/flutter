@@ -2,10 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/painting.dart';
 import 'package:flutter/widgets.dart';
-
-import '../flutter_test_alternative.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('TextSpan equals', () {
@@ -42,7 +40,6 @@ void main() {
             TextSpan(),
           ],
         ),
-        null,
         TextSpan(
           text: 'c',
         ),
@@ -57,7 +54,6 @@ void main() {
       '    "b"\n'
       '    TextSpan:\n'
       '      (empty)\n'
-      '  <null child>\n'
       '  TextSpan:\n'
       '    "c"\n'
     ));
@@ -236,28 +232,10 @@ void main() {
     expect(textSpan.getSpanForPosition(const TextPosition(offset: 3)).runtimeType, TextSpan);
   });
 
-  test('TextSpan with a null child should throw FlutterError', () {
-    const TextSpan text = TextSpan(
-      text: 'foo bar',
-      children: <InlineSpan>[
-        null,
-      ],
-    );
-    FlutterError error;
-    try {
-      text.computeToPlainText(StringBuffer());
-    } on FlutterError catch (e) {
-      error = e;
-    }
-    expect(error, isNotNull);
-    expect(error.toStringDeep(),
-      'FlutterError\n'
-      '   TextSpan contains a null child.\n'
-      '   A TextSpan object with a non-null child list should not have any\n'
-      '   nulls in its child list.\n'
-      '   The full text in question was:\n'
-      '     TextSpan("foo bar")\n'
-    );
+  test('TextSpan computeSemanticsInformation', () {
+    final List<InlineSpanSemanticsInformation> collector = <InlineSpanSemanticsInformation>[];
+    const TextSpan(text: 'aaa', semanticsLabel: 'bbb').computeSemanticsInformation(collector);
+    expect(collector[0].text, 'aaa');
+    expect(collector[0].semanticsLabel, 'bbb');
   });
-
 }

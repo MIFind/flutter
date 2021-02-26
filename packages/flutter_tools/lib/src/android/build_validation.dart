@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import '../base/common.dart';
 import '../build_info.dart';
 
@@ -11,6 +13,13 @@ const String kSupportedAbis = 'https://flutter.dev/docs/deployment/android#what-
 /// Validates that the build mode and build number are valid for a given build.
 void validateBuild(AndroidBuildInfo androidBuildInfo) {
   final BuildInfo buildInfo = androidBuildInfo.buildInfo;
+  if (buildInfo.codeSizeDirectory != null && androidBuildInfo.targetArchs.length > 1) {
+    throwToolExit(
+      'Cannot perform code size analysis when building for multiple ABIs. '
+      'Specify one of android-arm, android-arm64, or android-x64 in the '
+      '--target-platform flag.'
+    );
+  }
   if (buildInfo.mode.isPrecompiled && androidBuildInfo.targetArchs.contains(AndroidArch.x86)) {
     throwToolExit(
       'Cannot build ${androidBuildInfo.buildInfo.mode.name} mode for x86 ABI.\n'

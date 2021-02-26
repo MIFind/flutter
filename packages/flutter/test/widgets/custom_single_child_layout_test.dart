@@ -3,14 +3,13 @@
 // found in the LICENSE file.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 class TestSingleChildLayoutDelegate extends SingleChildLayoutDelegate {
-  BoxConstraints constraintsFromGetSize;
-  BoxConstraints constraintsFromGetConstraintsForChild;
-  Size sizeFromGetPositionForChild;
-  Size childSizeFromGetPositionForChild;
+  late BoxConstraints constraintsFromGetSize;
+  BoxConstraints? constraintsFromGetConstraintsForChild;
+  late Size sizeFromGetPositionForChild;
+  late Size childSizeFromGetPositionForChild;
 
   @override
   Size getSize(BoxConstraints constraints) {
@@ -103,10 +102,10 @@ void main() {
     expect(delegate.constraintsFromGetSize.minHeight, 0.0);
     expect(delegate.constraintsFromGetSize.maxHeight, 600.0);
 
-    expect(delegate.constraintsFromGetConstraintsForChild.minWidth, 0.0);
-    expect(delegate.constraintsFromGetConstraintsForChild.maxWidth, 800.0);
-    expect(delegate.constraintsFromGetConstraintsForChild.minHeight, 0.0);
-    expect(delegate.constraintsFromGetConstraintsForChild.maxHeight, 600.0);
+    expect(delegate.constraintsFromGetConstraintsForChild!.minWidth, 0.0);
+    expect(delegate.constraintsFromGetConstraintsForChild!.maxWidth, 800.0);
+    expect(delegate.constraintsFromGetConstraintsForChild!.minHeight, 0.0);
+    expect(delegate.constraintsFromGetConstraintsForChild!.maxHeight, 600.0);
 
     expect(delegate.sizeFromGetPositionForChild.width, 200.0);
     expect(delegate.sizeFromGetPositionForChild.height, 300.0);

@@ -10,7 +10,7 @@ import '../rendering/mock_canvas.dart';
 
 import '../widgets/semantics_tester.dart';
 
-Widget wrap({ Widget child }) {
+Widget wrap({ required Widget child }) {
   return MediaQuery(
     data: const MediaQueryData(),
     child: Directionality(
@@ -49,14 +49,14 @@ void main() {
           ),
           CheckboxListTile(
             value: true,
-            onChanged: (bool value) { },
+            onChanged: (bool? value) { },
             title: const Text('BBB'),
             secondary: const Text('bbb'),
           ),
           RadioListTile<bool>(
             value: true,
             groupValue: false,
-            onChanged: (bool value) { },
+            onChanged: (bool? value) { },
             title: const Text('CCC'),
             secondary: const Text('ccc'),
           ),
@@ -276,7 +276,7 @@ void main() {
     );
 
     await tester.pump();
-    expect(Focus.of(childKey.currentContext, nullOk: true).hasPrimaryFocus, isTrue);
+    expect(Focus.of(childKey.currentContext!).hasPrimaryFocus, isTrue);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -296,7 +296,7 @@ void main() {
     );
 
     await tester.pump();
-    expect(Focus.of(childKey.currentContext, nullOk: true).hasPrimaryFocus, isFalse);
+    expect(Focus.of(childKey.currentContext!).hasPrimaryFocus, isFalse);
   });
 
   testWidgets('SwitchListTile controlAffinity test', (WidgetTester tester) async {
@@ -338,4 +338,65 @@ void main() {
     expect(listTile.leading.runtimeType, Icon);
     expect(listTile.trailing.runtimeType, Switch);
   });
+
+  testWidgets('SwitchListTile respects shape', (WidgetTester tester) async {
+    const ShapeBorder shapeBorder = RoundedRectangleBorder(
+      borderRadius: BorderRadius.horizontal(right: Radius.circular(100))
+    );
+
+    await tester.pumpWidget(const MaterialApp(
+      home: Material(
+        child: SwitchListTile(
+          value: true,
+          onChanged: null,
+          title: Text('Title'),
+          shape: shapeBorder,
+        ),
+      ),
+    ));
+
+    expect(tester.widget<InkWell>(find.byType(InkWell)).customBorder, shapeBorder);
+  });
+
+  testWidgets('SwitchListTile respects tileColor', (WidgetTester tester) async {
+    const Color tileColor = Colors.red;
+
+    await tester.pumpWidget(
+      wrap(
+        child: const Center(
+          child: SwitchListTile(
+            value: false,
+            onChanged: null,
+            title: Text('Title'),
+            tileColor: tileColor,
+          ),
+        ),
+      ),
+    );
+
+    final ColoredBox coloredBox = tester.firstWidget(find.byType(ColoredBox));
+    expect(coloredBox.color, tileColor);
+  });
+
+  testWidgets('SwitchListTile respects selectedTileColor', (WidgetTester tester) async {
+    const Color selectedTileColor = Colors.black;
+
+    await tester.pumpWidget(
+      wrap(
+        child: const Center(
+          child: SwitchListTile(
+            value: false,
+            onChanged: null,
+            title: Text('Title'),
+            selected: true,
+            selectedTileColor: selectedTileColor,
+          ),
+        ),
+      ),
+    );
+
+    final ColoredBox coloredBox = tester.firstWidget(find.byType(ColoredBox));
+    expect(coloredBox.color, equals(selectedTileColor));
+  });
+
 }

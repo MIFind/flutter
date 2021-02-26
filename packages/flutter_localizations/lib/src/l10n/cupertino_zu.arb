@@ -19,6 +19,7 @@
   "copyButtonLabel": "Kopisha",
   "pasteButtonLabel": "Namathisela",
   "selectAllButtonLabel": "Khetha konke",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Cashisa"
+  "tabSemanticsLabel": "Ithebhu $tabIndex kwangu-$tabCount",
+  "modalBarrierDismissLabel": "Cashisa",
+  "searchTextFieldPlaceholderLabel": "Sesha"
 }

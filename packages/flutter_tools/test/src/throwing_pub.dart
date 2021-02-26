@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
+// @dart = 2.8
 
 import 'package:flutter_tools/src/base/io.dart';
 import 'package:flutter_tools/src/dart/pub.dart';
@@ -30,13 +30,21 @@ class ThrowingPub implements Pub {
     bool offline = false,
     bool checkLastModified = true,
     bool skipPubspecYamlCheck = false,
+    bool generateSyntheticPackage = false,
     String flutterRootOverride,
+    bool checkUpToDate = false,
   }) {
     throw UnsupportedError('Attempted to invoke pub during test.');
   }
 
   @override
-  Future<void> interactively(List<String> arguments, {String directory, @required Stdio stdio,}) {
+  Future<void> interactively(
+    List<String> arguments, {
+    String directory,
+    @required Stdio stdio,
+    bool touchesPackageConfig = false,
+    bool generateSyntheticPackage = false,
+  }) {
     throw UnsupportedError('Attempted to invoke pub during test.');
   }
 }

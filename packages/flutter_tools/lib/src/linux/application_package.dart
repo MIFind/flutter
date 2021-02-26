@@ -2,14 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:meta/meta.dart';
 
 import '../application_package.dart';
 import '../base/file_system.dart';
 import '../build_info.dart';
+import '../cmake.dart';
 import '../globals.dart' as globals;
 import '../project.dart';
-import 'cmake.dart';
 
 abstract class LinuxApp extends ApplicationPackage {
   LinuxApp({@required String projectBundleId}) : super(id: projectBundleId);
@@ -52,7 +54,7 @@ class PrebuiltLinuxApp extends LinuxApp {
 }
 
 class BuildableLinuxApp extends LinuxApp {
-  BuildableLinuxApp({this.project}) : super(projectBundleId: project.project.manifest.appName);
+  BuildableLinuxApp({this.project}) : super(projectBundleId: project.parent.manifest.appName);
 
   final LinuxProject project;
 
@@ -68,5 +70,5 @@ class BuildableLinuxApp extends LinuxApp {
   }
 
   @override
-  String get name => project.project.manifest.appName;
+  String get name => project.parent.manifest.appName;
 }

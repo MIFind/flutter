@@ -20,7 +20,7 @@ version: 1.0.0+1
 {{/withPluginHook}}
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: {{dartSdkVersionBounds}}
 
 dependencies:
   flutter:
@@ -32,22 +32,17 @@ dependencies:
     #   {{pluginProjectName}}: ^x.y.z
     # See https://dart.dev/tools/pub/dependencies#version-constraints
     # The example app is bundled with the plugin so we use a path dependency on
-    # the parent directory to use the current plugin's version. 
+    # the parent directory to use the current plugin's version.
     path: ../
 {{/withPluginHook}}
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.3
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-{{#withDriverTest}}
-  flutter_driver:
-    sdk: flutter
-  test: 1.13.0
-{{/withDriverTest}}
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

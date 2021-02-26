@@ -7,8 +7,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show timeDilation;
 
-import 'android_platform_view.dart';
-
 void main() {
   runApp(
     const PlatformViewApp()
@@ -17,17 +15,11 @@ void main() {
 
 class PlatformViewApp extends StatefulWidget {
   const PlatformViewApp({
-    Key key,
-    this.enableHybridCompositionOnAndroid = false,
+    Key? key,
   }) : super(key: key);
-
-  /// Whether to use render the Android view as a platform view or a texture.
-  final bool enableHybridCompositionOnAndroid;
 
   @override
   PlatformViewAppState createState() => PlatformViewAppState();
-
-  static PlatformViewAppState of(BuildContext context) => context.findAncestorStateOfType<PlatformViewAppState>();
 }
 
 class PlatformViewAppState extends State<PlatformViewApp> {
@@ -48,7 +40,7 @@ class PlatformViewAppState extends State<PlatformViewApp> {
 }
 
 class PlatformViewLayout extends StatelessWidget {
-  const PlatformViewLayout({ Key key }) : super(key: key);
+  const PlatformViewLayout({ Key? key }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -78,28 +70,20 @@ class PlatformViewLayout extends StatelessWidget {
 }
 
 class DummyPlatformView extends StatelessWidget {
-  const DummyPlatformView({Key key}) : super(key: key);
+  const DummyPlatformView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     const String viewType = 'benchmarks/platform_views_layout/DummyPlatformView';
-    Widget nativeView;
+    late Widget nativeView;
     if (Platform.isIOS) {
       nativeView = const UiKitView(
         viewType: viewType,
       );
     } else if (Platform.isAndroid) {
-      final PlatformViewApp app = PlatformViewApp.of(context).widget;
-      assert(app != null);
-      if (app.enableHybridCompositionOnAndroid) {
-        nativeView = const AndroidPlatformView(
-          viewType: viewType,
-        );
-      } else {
-        nativeView = const AndroidView(
-          viewType: viewType,
-        );
-      }
+      nativeView = const AndroidView(
+        viewType: viewType,
+      );
     } else {
       assert(false, 'Invalid platform');
     }
@@ -112,7 +96,7 @@ class DummyPlatformView extends StatelessWidget {
 }
 
 class RotationContainer extends StatefulWidget {
-  const RotationContainer({Key key}) : super(key: key);
+  const RotationContainer({Key? key}) : super(key: key);
 
   @override
   _RotationContainerState createState() => _RotationContainerState();
@@ -120,7 +104,7 @@ class RotationContainer extends StatefulWidget {
 
 class _RotationContainerState extends State<RotationContainer>
   with SingleTickerProviderStateMixin {
-  AnimationController _rotationController;
+  late AnimationController _rotationController;
 
   @override
   void initState() {

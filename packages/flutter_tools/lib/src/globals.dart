@@ -2,21 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:process/process.dart';
 
 import 'android/android_sdk.dart';
 import 'android/android_studio.dart';
+import 'android/gradle_utils.dart';
 import 'artifacts.dart';
 import 'base/bot_detector.dart';
 import 'base/config.dart';
 import 'base/context.dart';
-import 'base/error_handling_file_system.dart';
+import 'base/error_handling_io.dart';
 import 'base/file_system.dart';
 import 'base/io.dart';
 import 'base/logger.dart';
 import 'base/net.dart';
 import 'base/os.dart';
 import 'base/platform.dart';
+import 'base/process.dart';
 import 'base/signals.dart';
 import 'base/template.dart';
 import 'base/terminal.dart';
@@ -24,6 +28,7 @@ import 'base/time.dart';
 import 'base/user_messages.dart';
 import 'build_system/build_system.dart';
 import 'cache.dart';
+import 'device.dart';
 import 'doctor.dart';
 import 'fuchsia/fuchsia_sdk.dart';
 import 'ios/ios_workflow.dart';
@@ -31,10 +36,12 @@ import 'ios/plist_parser.dart';
 import 'ios/simulators.dart';
 import 'ios/xcodeproj.dart';
 import 'macos/cocoapods.dart';
+import 'macos/cocoapods_validator.dart';
 import 'macos/xcode.dart';
 import 'persistent_tool_state.dart';
 import 'project.dart';
 import 'reporting/reporting.dart';
+import 'runner/local_engine.dart';
 import 'version.dart';
 
 Artifacts get artifacts => context.get<Artifacts>();
@@ -49,6 +56,7 @@ OperatingSystemUtils get os => context.get<OperatingSystemUtils>();
 PersistentToolState get persistentToolState => PersistentToolState.instance;
 Signals get signals => context.get<Signals>() ?? LocalSignals.instance;
 Usage get flutterUsage => context.get<Usage>();
+DeviceManager get deviceManager => context.get<DeviceManager>();
 
 FlutterProjectFactory get projectFactory {
   return context.get<FlutterProjectFactory>() ?? FlutterProjectFactory(
@@ -56,6 +64,10 @@ FlutterProjectFactory get projectFactory {
     fileSystem: fs,
   );
 }
+
+CocoaPodsValidator get cocoapodsValidator => context.get<CocoaPodsValidator>();
+
+LocalEngineLocator get localEngineLocator => context.get<LocalEngineLocator>();
 
 /// Currently active implementation of the file system.
 ///
@@ -66,17 +78,16 @@ FileSystem get fs => ErrorHandlingFileSystem(
   platform: platform,
 );
 
-final FileSystemUtils _defaultFileSystemUtils = FileSystemUtils(
+FileSystemUtils get fsUtils => context.get<FileSystemUtils>() ?? FileSystemUtils(
   fileSystem: fs,
   platform: platform,
 );
-
-FileSystemUtils get fsUtils => context.get<FileSystemUtils>() ?? _defaultFileSystemUtils;
 
 const ProcessManager _kLocalProcessManager = LocalProcessManager();
 
 /// The active process manager.
 ProcessManager get processManager => context.get<ProcessManager>() ?? _kLocalProcessManager;
+ProcessUtils get processUtils => context.get<ProcessUtils>();
 
 const Platform _kLocalPlatform = LocalPlatform();
 
@@ -191,5 +202,8 @@ PlistParser get plistParser => context.get<PlistParser>() ?? (
 ));
 PlistParser _plistInstance;
 
-/// The global template renderer
+/// The global template renderer.
 TemplateRenderer get templateRenderer => context.get<TemplateRenderer>();
+
+/// Gradle utils in the current [AppContext].
+GradleUtils get gradleUtils => context.get<GradleUtils>();

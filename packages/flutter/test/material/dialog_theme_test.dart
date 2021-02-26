@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-MaterialApp _appWithDialog(WidgetTester tester, Widget dialog, { ThemeData theme }) {
+MaterialApp _appWithDialog(WidgetTester tester, Widget dialog, { ThemeData? theme }) {
   return MaterialApp(
     theme: theme,
     home: Material(
       child: Builder(
         builder: (BuildContext context) {
           return Center(
-            child: RaisedButton(
+            child: ElevatedButton(
               child: const Text('X'),
               onPressed: () {
                 showDialog<void>(
@@ -38,7 +38,7 @@ Material _getMaterialFromDialog(WidgetTester tester) {
 }
 
 RenderParagraph _getTextRenderObject(WidgetTester tester, String text) {
-  return tester.element<StatelessElement>(find.text(text)).renderObject as RenderParagraph;
+  return tester.element<StatelessElement>(find.text(text)).renderObject! as RenderParagraph;
 }
 
 void main() {
@@ -182,7 +182,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final RenderParagraph title = _getTextRenderObject(tester, titleText);
-    expect(title.text.style.color, titleTextStyle.color);
+    expect(title.text.style!.color, titleTextStyle.color);
   });
 
   testWidgets('Simple Dialog - Custom Title Text Style - Constructor Param', (WidgetTester tester) async {
@@ -230,7 +230,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final RenderParagraph title = _getTextRenderObject(tester, titleText);
-    expect(title.text.style.color, titleTextStyle.color);
+    expect(title.text.style!.color, titleTextStyle.color);
   });
 
   testWidgets('Custom Content Text Style - Constructor Param', (WidgetTester tester) async {
@@ -281,6 +281,6 @@ void main() {
     await tester.pumpAndSettle();
 
     final RenderParagraph content = _getTextRenderObject(tester, contentText);
-    expect(content.text.style.color, contentTextStyle.color);
+    expect(content.text.style!.color, contentTextStyle.color);
   });
 }

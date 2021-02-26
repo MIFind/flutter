@@ -41,7 +41,7 @@ class ValueClipper<T> extends CustomClipper<T> {
 }
 
 class NotifyClipper<T> extends CustomClipper<T> {
-  NotifyClipper({this.clip}) : super(reclip: clip);
+  NotifyClipper({required this.clip}) : super(reclip: clip);
 
   final ValueNotifier<T> clip;
 

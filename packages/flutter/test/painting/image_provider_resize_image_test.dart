@@ -8,24 +8,51 @@ import 'dart:typed_data';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../image_data.dart';
 import '../rendering/rendering_tester.dart';
-import 'image_data.dart';
 
 void main() {
   TestRenderingFlutterBinding();
 
   tearDown(() {
-    PaintingBinding.instance.imageCache.clear();
-    PaintingBinding.instance.imageCache.clearLiveImages();
+    PaintingBinding.instance!.imageCache!.clear();
+    PaintingBinding.instance!.imageCache!.clearLiveImages();
   });
 
-  test('ResizeImage resizes to the correct dimensions', () async {
+  test('ResizeImage resizes to the correct dimensions (up)', () async {
     final Uint8List bytes = Uint8List.fromList(kTransparentImage);
     final MemoryImage imageProvider = MemoryImage(bytes);
     final Size rawImageSize = await _resolveAndGetSize(imageProvider);
     expect(rawImageSize, const Size(1, 1));
 
     const Size resizeDims = Size(14, 7);
+    final ResizeImage resizedImage = ResizeImage(MemoryImage(bytes), width: resizeDims.width.round(), height: resizeDims.height.round(), allowUpscaling: true);
+    const ImageConfiguration resizeConfig = ImageConfiguration(size: resizeDims);
+    final Size resizedImageSize = await _resolveAndGetSize(resizedImage, configuration: resizeConfig);
+    expect(resizedImageSize, resizeDims);
+  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/56312
+
+
+  test('ResizeImage resizes to the correct dimensions (down)', () async {
+    final Uint8List bytes = Uint8List.fromList(kBlueSquarePng);
+    final MemoryImage imageProvider = MemoryImage(bytes);
+    final Size rawImageSize = await _resolveAndGetSize(imageProvider);
+    expect(rawImageSize, const Size(50, 50));
+
+    const Size resizeDims = Size(25, 25);
+    final ResizeImage resizedImage = ResizeImage(MemoryImage(bytes), width: resizeDims.width.round(), height: resizeDims.height.round(), allowUpscaling: true);
+    const ImageConfiguration resizeConfig = ImageConfiguration(size: resizeDims);
+    final Size resizedImageSize = await _resolveAndGetSize(resizedImage, configuration: resizeConfig);
+    expect(resizedImageSize, resizeDims);
+  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/56312
+
+  test('ResizeImage resizes to the correct dimensions - no upscaling', () async {
+    final Uint8List bytes = Uint8List.fromList(kTransparentImage);
+    final MemoryImage imageProvider = MemoryImage(bytes);
+    final Size rawImageSize = await _resolveAndGetSize(imageProvider);
+    expect(rawImageSize, const Size(1, 1));
+
+    const Size resizeDims = Size(1, 1);
     final ResizeImage resizedImage = ResizeImage(MemoryImage(bytes), width: resizeDims.width.round(), height: resizeDims.height.round());
     const ImageConfiguration resizeConfig = ImageConfiguration(size: resizeDims);
     final Size resizedImageSize = await _resolveAndGetSize(resizedImage, configuration: resizeConfig);
@@ -71,10 +98,11 @@ void main() {
     final MemoryImage memoryImage = MemoryImage(bytes);
     final ResizeImage resizeImage = ResizeImage(memoryImage, width: 123, height: 321);
 
-    final DecoderCallback decode = (Uint8List bytes, {int cacheWidth, int cacheHeight}) {
+    final DecoderCallback decode = (Uint8List bytes, {int? cacheWidth, int? cacheHeight, bool allowUpscaling = false}) {
       expect(cacheWidth, 123);
       expect(cacheHeight, 321);
-      return PaintingBinding.instance.instantiateImageCodec(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight);
+      expect(allowUpscaling, false);
+      return PaintingBinding.instance!.instantiateImageCodec(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling);
     };
 
     resizeImage.load(await resizeImage.obtainKey(ImageConfiguration.empty), decode);

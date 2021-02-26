@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:async';
 
 import '../base/context.dart';
@@ -49,8 +51,9 @@ class FuchsiaSdk {
   /// Returns any attached devices is a newline-denominated String.
   ///
   /// Example output:
-  ///    $ device-finder list -full
-  ///    > 192.168.42.56 paper-pulp-bush-angel
+  ///
+  ///     $ device-finder list -full
+  ///     > 192.168.42.56 paper-pulp-bush-angel
   Future<String> listDevices({ Duration timeout }) async {
     if (globals.fuchsiaArtifacts.devFinder == null ||
         !globals.fuchsiaArtifacts.devFinder.existsSync()) {

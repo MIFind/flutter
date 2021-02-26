@@ -19,6 +19,7 @@
   "copyButtonLabel": "Копирај",
   "pasteButtonLabel": "Залепи",
   "selectAllButtonLabel": "Избери ги сите",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Отфрли"
+  "tabSemanticsLabel": "Картичка $tabIndex од $tabCount",
+  "modalBarrierDismissLabel": "Отфрли",
+  "searchTextFieldPlaceholderLabel": "Пребарувајте"
 }

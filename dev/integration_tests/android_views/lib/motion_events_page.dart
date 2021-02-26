@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -80,13 +79,13 @@ class MotionEventsBodyState extends State<MotionEventsBody> {
         Row(
           children: <Widget>[
             Expanded(
-              child: RaisedButton(
+              child: ElevatedButton(
                 child: const Text('RECORD'),
                 onPressed: listenToFlutterViewEvents,
               ),
             ),
             Expanded(
-              child: RaisedButton(
+              child: ElevatedButton(
                 child: const Text('CLEAR'),
                 onPressed: () {
                   setState(() {
@@ -97,7 +96,7 @@ class MotionEventsBodyState extends State<MotionEventsBody> {
               ),
             ),
             Expanded(
-              child: RaisedButton(
+              child: ElevatedButton(
                 child: const Text('SAVE'),
                 onPressed: () {
                   const StandardMessageCodec codec = StandardMessageCodec();
@@ -107,14 +106,14 @@ class MotionEventsBodyState extends State<MotionEventsBody> {
               ),
             ),
             Expanded(
-              child: RaisedButton(
+              child: ElevatedButton(
                 key: const ValueKey<String>('play'),
                 child: const Text('PLAY FILE'),
                 onPressed: () { playEventsFile(); },
               ),
             ),
             Expanded(
-              child: RaisedButton(
+              child: ElevatedButton(
                 key: const ValueKey<String>('back'),
                 child: const Text('BACK'),
                 onPressed: () { Navigator.pop(context); },
@@ -187,7 +186,7 @@ class MotionEventsBodyState extends State<MotionEventsBody> {
   }
 
   void showMessage(BuildContext context, String message) {
-    Scaffold.of(context).showSnackBar(SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
       duration: const Duration(seconds: 3),
     ));

@@ -16,7 +16,7 @@ void main() {
   const double width = 800;
   const double height = 600;
   Rect rectExpandedOnAxis(double value) => Rect.fromLTRB(0.0, 0.0 - value, width, height + value);
-  List<RenderSliver> children;
+  late List<RenderSliver> children;
 
   setUp(() {
     children = <RenderSliver>[
@@ -159,7 +159,7 @@ class CustomConstraintsRenderSliver extends RenderSliver {
   CustomConstraintsRenderSliver(this.constraints);
 
   @override
-  SliverGeometry get geometry => const SliverGeometry();
+  SliverGeometry get geometry => SliverGeometry.zero;
 
   @override
   final SliverConstraints constraints;

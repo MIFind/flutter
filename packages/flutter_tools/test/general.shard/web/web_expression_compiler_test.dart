@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:dwds/dwds.dart';
 import 'package:flutter_tools/src/compile.dart';
-import 'package:flutter_tools/src/build_runner/devfs_web.dart';
+import 'package:flutter_tools/src/isolated/devfs_web.dart';
 import 'package:matcher/matcher.dart';
 import 'package:mockito/mockito.dart';
 import 'package:flutter_tools/src/globals.dart' as globals;
@@ -82,7 +84,7 @@ void expectResult(ExpressionCompilationResult result, bool isError, String value
   expect(result,
     const TypeMatcher<ExpressionCompilationResult>()
       .having((ExpressionCompilationResult instance) => instance.isError, 'isError', isError)
-      .having((ExpressionCompilationResult instance) =>instance.result, 'result', value));
+      .having((ExpressionCompilationResult instance) => instance.result, 'result', value));
 }
 
 class MockResidentCompiler extends Mock implements ResidentCompiler {}

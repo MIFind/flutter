@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -28,8 +27,13 @@ void main() {
     }
 
     Future<void> expectScriptResult(
-        List<String> testNames, int expectedExitCode) async {
-      final ProcessResult result = await runScript(testNames);
+        List<String> testNames,
+        int expectedExitCode,
+        {String deviceId}
+      ) async {
+      final ProcessResult result = await runScript(testNames, <String>[
+        if (deviceId != null) ...<String>['-d', deviceId],
+      ]);
       expect(result.exitCode, expectedExitCode,
           reason:
               '[ stderr from test process ]\n\n${result.stderr}\n\n[ end of stderr ]'
@@ -70,6 +74,17 @@ void main() {
         1,
       );
     });
+
+    test('exits with code 0 when provided a valid device ID', () async {
+      await expectScriptResult(<String>['smoke_test_device'], 0,
+        deviceId: 'FAKE');
+    });
+
+    test('exits with code 1 when provided a bad device ID', () async {
+      await expectScriptResult(<String>['smoke_test_device'], 1,
+        deviceId: 'THIS_IS_NOT_VALID');
+    });
+
 
     test('runs A/B test', () async {
       final ProcessResult result = await runScript(
@@ -122,6 +137,15 @@ void main() {
           'metric2\t123.00 (0.00%)\t123.00 (0.00%)\t1.00x\t\n',
         ),
       );
+    });
+
+    test('fails to upload results to Cocoon if flags given', () async {
+      // CocoonClient will fail to find test-file, and will not send any http requests.
+      final ProcessResult result = await runScript(
+        <String>['smoke_test_success'],
+        <String>['--service-account-file=test-file', '--task-key=task123'],
+      );
+      expect(result.exitCode, 1);
     });
   });
 }

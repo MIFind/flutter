@@ -390,19 +390,19 @@ void main() {
 class ClipCachePainter extends CustomPainter {
   ClipCachePainter(this.context);
 
-  Path value;
+  late Path value;
   BuildContext context;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final RenderPhysicalShape physicalShape = findPhysicalShapeChild(context);
-    value = physicalShape.clipper.getClip(size);
+    final RenderPhysicalShape physicalShape = findPhysicalShapeChild(context)!;
+    value = physicalShape.clipper!.getClip(size);
   }
 
-  RenderPhysicalShape findPhysicalShapeChild(BuildContext context) {
-    RenderPhysicalShape result;
+  RenderPhysicalShape? findPhysicalShapeChild(BuildContext context) {
+    RenderPhysicalShape? result;
     context.visitChildElements((Element e) {
-      final RenderObject renderObject = e.findRenderObject();
+      final RenderObject renderObject = e.findRenderObject()!;
       if (renderObject.runtimeType == RenderPhysicalShape) {
         assert(result == null);
         result = renderObject as RenderPhysicalShape;
@@ -420,7 +420,7 @@ class ClipCachePainter extends CustomPainter {
 }
 
 class ShapeListener extends StatefulWidget {
-  const ShapeListener(this.child, { Key key }) : super(key: key);
+  const ShapeListener(this.child, { Key? key }) : super(key: key);
 
   final Widget child;
 
@@ -438,7 +438,7 @@ class ShapeListenerState extends State<ShapeListener> {
     );
   }
 
-  ClipCachePainter cache;
+  late ClipCachePainter cache;
 
   @override
   void didChangeDependencies() {
@@ -452,7 +452,7 @@ class RectangularNotch extends NotchedShape {
   const RectangularNotch();
 
   @override
-  Path getOuterPath(Rect host, Rect guest) {
+  Path getOuterPath(Rect host, Rect? guest) {
     if (guest == null)
       return Path()..addRect(host);
     return Path()

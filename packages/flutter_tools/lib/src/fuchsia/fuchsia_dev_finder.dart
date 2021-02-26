@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:meta/meta.dart';
 import 'package:process/process.dart';
 
@@ -38,7 +40,8 @@ class FuchsiaDevFinder {
 
   /// Returns a list of attached devices as a list of strings with entries
   /// formatted as follows:
-  /// 192.168.42.172 scare-cable-skip-joy
+  ///
+  ///     192.168.42.172 scare-cable-skip-joy
   Future<List<String>> list({ Duration timeout }) async {
     if (_fuchsiaArtifacts.devFinder == null ||
         !_fuchsiaArtifacts.devFinder.existsSync()) {
@@ -65,12 +68,9 @@ class FuchsiaDevFinder {
 
   /// Returns the address of the named device.
   ///
-  /// If local is true, then gives the address by which the device reaches the
-  /// host.
-  ///
   /// The string [deviceName] should be the name of the device from the
   /// 'list' command, e.g. 'scare-cable-skip-joy'.
-  Future<String> resolve(String deviceName, {bool local = false}) async {
+  Future<String> resolve(String deviceName) async {
     if (_fuchsiaArtifacts.devFinder == null ||
         !_fuchsiaArtifacts.devFinder.existsSync()) {
       throwToolExit('Fuchsia device-finder tool not found.');
@@ -78,7 +78,6 @@ class FuchsiaDevFinder {
     final List<String> command = <String>[
       _fuchsiaArtifacts.devFinder.path,
       'resolve',
-      if (local) '-local',
       '-device-limit', '1',
       deviceName,
     ];

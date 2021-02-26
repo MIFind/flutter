@@ -19,6 +19,7 @@
   "copyButtonLabel": "မိတ္တူကူးရန်",
   "pasteButtonLabel": "ကူးထည့်ရန်",
   "selectAllButtonLabel": "အားလုံး ရွေးရန်",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "ပယ်ရန်"
+  "tabSemanticsLabel": "တဘ် $tabCount ခုအနက် $tabIndex ခု",
+  "modalBarrierDismissLabel": "ပယ်ရန်",
+  "searchTextFieldPlaceholderLabel": "ရှာရန်"
 }

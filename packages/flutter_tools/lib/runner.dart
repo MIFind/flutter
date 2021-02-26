@@ -2,13 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:async';
 
 import 'package:args/command_runner.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:intl/intl_standalone.dart' as intl_standalone;
-import 'package:http/http.dart' as http;
 
+import 'src/base/async_guard.dart';
 import 'src/base/common.dart';
 import 'src/base/context.dart';
 import 'src/base/file_system.dart';
@@ -25,7 +27,7 @@ import 'src/runner/flutter_command_runner.dart';
 /// Runs the Flutter tool with support for the specified list of [commands].
 Future<int> run(
   List<String> args,
-  List<FlutterCommand> commands, {
+  List<FlutterCommand> Function() commands, {
     bool muteCommandLogging = false,
     bool verbose = false,
     bool verboseHelp = false,
@@ -40,11 +42,10 @@ Future<int> run(
     args.removeWhere((String option) => option == '-v' || option == '--verbose');
   }
 
-  final FlutterCommandRunner runner = FlutterCommandRunner(verboseHelp: verboseHelp);
-  commands.forEach(runner.addCommand);
-
   return runInContext<int>(() async {
     reportCrashes ??= !await globals.isRunningOnBot;
+    final FlutterCommandRunner runner = FlutterCommandRunner(verboseHelp: verboseHelp);
+    commands().forEach(runner.addCommand);
 
     // Initialize the system locale.
     final String systemLocale = await intl_standalone.findSystemLocale();
@@ -59,7 +60,16 @@ Future<int> run(
     return await runZoned<Future<int>>(() async {
       try {
         await runner.run(args);
-        return await _exit(0);
+
+        // Triggering [runZoned]'s error callback does not necessarily mean that
+        // we stopped executing the body.  See https://github.com/dart-lang/sdk/issues/42150.
+        if (firstError == null) {
+          return await _exit(0);
+        }
+
+        // We already hit some error, so don't return success.  The error path
+        // (which should be in progress) is responsible for calling _exit().
+        return 1;
       // This catches all exceptions to send to crash logging, etc.
       } catch (error, stackTrace) {  // ignore: avoid_catches_without_on_clauses
         firstError = error;
@@ -71,9 +81,9 @@ Future<int> run(
       // If sending a crash report throws an error into the zone, we don't want
       // to re-try sending the crash report with *that* error. Rather, we want
       // to send the original error that triggered the crash report.
-      final Object e = firstError ?? error;
-      final StackTrace s = firstStackTrace ?? stackTrace;
-      await _handleToolError(e, s, verbose, args, reportCrashes, getVersion);
+      firstError ??= error;
+      firstStackTrace ??= stackTrace;
+      await _handleToolError(firstError, firstStackTrace, verbose, args, reportCrashes, getVersion);
     });
   }, overrides: overrides);
 }
@@ -120,19 +130,22 @@ Future<int> _handleToolError(
 
     // Report to both [Usage] and [CrashReportSender].
     globals.flutterUsage.sendException(error);
-    final CrashReportSender crashReportSender = CrashReportSender(
-      client: http.Client(),
-      usage: globals.flutterUsage,
-      platform: globals.platform,
-      logger: globals.logger,
-      operatingSystemUtils: globals.os,
-    );
-    await crashReportSender.sendReport(
-      error: error,
-      stackTrace: stackTrace,
-      getFlutterVersion: getFlutterVersion,
-      command: args.join(' '),
-    );
+    await asyncGuard(() async {
+      final CrashReportSender crashReportSender = CrashReportSender(
+        usage: globals.flutterUsage,
+        platform: globals.platform,
+        logger: globals.logger,
+        operatingSystemUtils: globals.os,
+      );
+      await crashReportSender.sendReport(
+        error: error,
+        stackTrace: stackTrace,
+        getFlutterVersion: getFlutterVersion,
+        command: args.join(' '),
+      );
+    }, onError: (dynamic error) {
+      globals.printError('Error sending crash report: $error');
+    });
 
     globals.printError('Oops; flutter has exited unexpectedly: "$error".');
 
@@ -247,7 +260,7 @@ Future<int> _exit(int code) async {
       globals.printTrace('exiting with code $code');
       exit(code);
       completer.complete();
-    // This catches all exceptions becauce the error is propagated on the
+    // This catches all exceptions because the error is propagated on the
     // completer.
     } catch (error, stackTrace) { // ignore: avoid_catches_without_on_clauses
       completer.completeError(error, stackTrace);

@@ -5,6 +5,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../rendering/mock_canvas.dart';
 
@@ -195,6 +196,31 @@ void main() {
     );
   });
 
+  testWidgets('LinearProgressIndicator with animation with null colors', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: SizedBox(
+            width: 200.0,
+            child: LinearProgressIndicator(
+              value: 0.25,
+              valueColor: AlwaysStoppedAnimation<Color?>(null),
+              backgroundColor: Colors.black,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byType(LinearProgressIndicator),
+      paints
+        ..rect(rect: const Rect.fromLTRB(0.0, 0.0, 200.0, 4.0))
+        ..rect(rect: const Rect.fromLTRB(0.0, 0.0, 50.0, 4.0)),
+    );
+  });
+
   testWidgets('CircularProgressIndicator(value: 0.0) can be constructed and has value semantics by default', (WidgetTester tester) async {
     final SemanticsHandle handle = tester.ensureSemantics();
     await tester.pumpWidget(
@@ -296,8 +322,8 @@ void main() {
   });
 
   testWidgets('Determinate CircularProgressIndicator stops the animator', (WidgetTester tester) async {
-    double progressValue;
-    StateSetter setState;
+    double? progressValue;
+    late StateSetter setState;
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
@@ -344,7 +370,7 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
   });
 
-  testWidgets('LinearProgressIndicator with a height less than the minumum', (WidgetTester tester) async {
+  testWidgets('LinearProgressIndicator with a height less than the minimum', (WidgetTester tester) async {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
@@ -553,5 +579,47 @@ void main() {
       find.byWidget(display),
       matchesGoldenFile('material.circular_progress_indicator.indeterminate.png'),
     );
-  }, skip: isBrowser);
+  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/42767
+
+  testWidgets(
+    'Adaptive CircularProgressIndicator displays CupertinoActivityIndicator in iOS',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Material(
+              child: CircularProgressIndicator.adaptive(),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
+    }, variant: const TargetPlatformVariant(<TargetPlatform> {
+      TargetPlatform.iOS,
+      TargetPlatform.macOS,
+    })
+  );
+
+  testWidgets(
+    'Adaptive CircularProgressIndicator does not display CupertinoActivityIndicator in non-iOS',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Material(
+              child: CircularProgressIndicator.adaptive(),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CupertinoActivityIndicator), findsNothing);
+    }, variant: const TargetPlatformVariant(<TargetPlatform> {
+      TargetPlatform.android,
+      TargetPlatform.fuchsia,
+      TargetPlatform.windows,
+      TargetPlatform.linux,
+    }),
+  );
 }

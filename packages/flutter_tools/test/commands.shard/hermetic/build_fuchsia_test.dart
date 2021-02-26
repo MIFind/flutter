@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:file/memory.dart';
 import 'package:file_testing/file_testing.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
@@ -9,19 +11,20 @@ import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/build_info.dart';
 import 'package:flutter_tools/src/cache.dart';
 import 'package:flutter_tools/src/commands/build.dart';
+import 'package:flutter_tools/src/features.dart';
 import 'package:flutter_tools/src/fuchsia/fuchsia_kernel_compiler.dart';
 import 'package:flutter_tools/src/fuchsia/fuchsia_pm.dart';
 import 'package:flutter_tools/src/fuchsia/fuchsia_sdk.dart';
 import 'package:flutter_tools/src/project.dart';
 import 'package:meta/meta.dart';
-import 'package:mockito/mockito.dart';
 import 'package:process/process.dart';
+import 'package:test/fake.dart';
 
 import '../../src/common.dart';
 import '../../src/context.dart';
-import '../../src/mocks.dart';
+import '../../src/testbed.dart';
 
-// Defined globally for mocks to use.
+// Defined globally for fakes to use.
 FileSystem fileSystem;
 
 void main() {
@@ -39,14 +42,31 @@ void main() {
       'FLUTTER_ROOT': '/'
     },
   );
-  MockFuchsiaSdk fuchsiaSdk;
+  FakeFuchsiaSdk fuchsiaSdk;
 
   setUp(() {
-    fuchsiaSdk = MockFuchsiaSdk();
+    fuchsiaSdk = FakeFuchsiaSdk();
     fileSystem = MemoryFileSystem.test();
   });
 
   group('Fuchsia build fails gracefully when', () {
+    testUsingContext('The feature is disabled', () async {
+      final BuildCommand command = BuildCommand();
+      fileSystem.directory('fuchsia').createSync(recursive: true);
+      fileSystem.file('.packages').createSync();
+      fileSystem.file('pubspec.yaml').createSync();
+      fileSystem.file('lib/main.dart').createSync(recursive: true);
+
+      expect(
+        createTestCommandRunner(command).run(const <String>['build', 'fuchsia']),
+        throwsToolExit(message: '"build fuchsia" is currently disabled'),
+      );
+    }, overrides: <Type, Generator>{
+      Platform: () => linuxPlatform,
+      FileSystem: () => fileSystem,
+      ProcessManager: () => FakeProcessManager.any(),
+      FeatureFlags: () => TestFeatureFlags(isFuchsiaEnabled: false),
+    });
     testUsingContext('there is no Fuchsia project', () async {
       final BuildCommand command = BuildCommand();
 
@@ -58,6 +78,7 @@ void main() {
       Platform: () => linuxPlatform,
       FileSystem: () => fileSystem,
       ProcessManager: () => FakeProcessManager.any(),
+      FeatureFlags: () => TestFeatureFlags(isFuchsiaEnabled: true),
     });
 
     testUsingContext('there is no cmx file', () async {
@@ -74,6 +95,7 @@ void main() {
       Platform: () => linuxPlatform,
       FileSystem: () => fileSystem,
       ProcessManager: () => FakeProcessManager.any(),
+      FeatureFlags: () => TestFeatureFlags(isFuchsiaEnabled: true),
     });
 
     testUsingContext('on Windows platform', () async {
@@ -95,6 +117,7 @@ void main() {
       Platform: () => windowsPlatform,
       FileSystem: () => fileSystem,
       ProcessManager: () => FakeProcessManager.any(),
+      FeatureFlags: () => TestFeatureFlags(isFuchsiaEnabled: true),
     });
 
     testUsingContext('there is no Fuchsia kernel compiler', () async {
@@ -117,12 +140,12 @@ void main() {
       Platform: () => linuxPlatform,
       FileSystem: () => fileSystem,
       ProcessManager: () => FakeProcessManager.any(),
+      FeatureFlags: () => TestFeatureFlags(isFuchsiaEnabled: true),
     });
   });
 
   testUsingContext('Fuchsia build parts fit together right', () async {
     final BuildCommand command = BuildCommand();
-    applyMocksToCommand(command);
     const String appName = 'app_name';
     fileSystem
         .file(fileSystem.path.join('fuchsia', 'meta', '$appName.cmx'))
@@ -145,10 +168,11 @@ void main() {
     FileSystem: () => fileSystem,
     ProcessManager: () => FakeProcessManager.any(),
     FuchsiaSdk: () => fuchsiaSdk,
+    FeatureFlags: () => TestFeatureFlags(isFuchsiaEnabled: true),
   });
 }
 
-class MockFuchsiaPM extends Mock implements FuchsiaPM {
+class FakeFuchsiaPM extends Fake implements FuchsiaPM {
   String _appName;
 
   @override
@@ -200,7 +224,7 @@ class MockFuchsiaPM extends Mock implements FuchsiaPM {
   }
 }
 
-class MockFuchsiaKernelCompiler extends Mock implements FuchsiaKernelCompiler {
+class FakeFuchsiaKernelCompiler extends Fake implements FuchsiaKernelCompiler {
   @override
   Future<void> build({
     @required FuchsiaProject fuchsiaProject,
@@ -214,11 +238,11 @@ class MockFuchsiaKernelCompiler extends Mock implements FuchsiaKernelCompiler {
   }
 }
 
-class MockFuchsiaSdk extends Mock implements FuchsiaSdk {
+class FakeFuchsiaSdk extends Fake implements FuchsiaSdk {
   @override
-  final FuchsiaPM fuchsiaPM = MockFuchsiaPM();
+  final FuchsiaPM fuchsiaPM = FakeFuchsiaPM();
 
   @override
   final FuchsiaKernelCompiler fuchsiaKernelCompiler =
-      MockFuchsiaKernelCompiler();
+      FakeFuchsiaKernelCompiler();
 }

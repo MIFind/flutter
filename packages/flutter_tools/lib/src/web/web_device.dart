@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:meta/meta.dart';
 import 'package:process/process.dart';
 
@@ -11,10 +13,10 @@ import '../base/io.dart';
 import '../base/logger.dart';
 import '../base/os.dart';
 import '../base/platform.dart';
+import '../base/version.dart';
 import '../build_info.dart';
 import '../device.dart';
 import '../features.dart';
-import '../globals.dart' as globals;
 import '../project.dart';
 import 'chrome.dart';
 
@@ -36,7 +38,7 @@ abstract class ChromiumDevice extends Device {
     @required String name,
     @required this.chromeLauncher,
     @required FileSystem fileSystem,
-    Logger logger,
+    @required Logger logger,
   }) : _fileSystem = fileSystem,
        _logger = logger,
        super(
@@ -49,7 +51,7 @@ abstract class ChromiumDevice extends Device {
   final ChromiumLauncher chromeLauncher;
 
   final FileSystem _fileSystem;
-  Logger _logger;
+  final Logger _logger;
 
   /// The active chrome instance.
   Chromium _chrome;
@@ -72,6 +74,9 @@ abstract class ChromiumDevice extends Device {
   bool get supportsScreenshot => false;
 
   @override
+  bool supportsRuntimeMode(BuildMode buildMode) => buildMode != BuildMode.jitRelease;
+
+  @override
   void clearLogs() { }
 
   DeviceLogReader _logReader;
@@ -85,10 +90,16 @@ abstract class ChromiumDevice extends Device {
   }
 
   @override
-  Future<bool> installApp(ApplicationPackage app) async => true;
+  Future<bool> installApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async => true;
 
   @override
-  Future<bool> isAppInstalled(ApplicationPackage app) async => true;
+  Future<bool> isAppInstalled(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async => true;
 
   @override
   Future<bool> isLatestBuildInstalled(ApplicationPackage app) async => true;
@@ -114,8 +125,8 @@ abstract class ChromiumDevice extends Device {
     Map<String, Object> platformArgs,
     bool prebuiltApplication = false,
     bool ipv6 = false,
+    String userIdentifier,
   }) async {
-    _logger ??= globals.logger;
     // See [ResidentWebRunner.run] in flutter_tools/lib/src/resident_web_runner.dart
     // for the web initialization and server logic.
     final String url = platformArgs['uri'] as String;
@@ -130,13 +141,15 @@ abstract class ChromiumDevice extends Device {
         debugPort: debuggingOptions.webBrowserDebugPort,
       );
     }
-
     _logger.sendEvent('app.webLaunchUrl', <String, dynamic>{'url': url, 'launched': launchChrome});
     return LaunchResult.succeeded(observatoryUri: url != null ? Uri.parse(url): null);
   }
 
   @override
-  Future<bool> stopApp(ApplicationPackage app) async {
+  Future<bool> stopApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async {
     await _chrome?.close();
     return true;
   }
@@ -145,7 +158,10 @@ abstract class ChromiumDevice extends Device {
   Future<TargetPlatform> get targetPlatform async => TargetPlatform.web_javascript;
 
   @override
-  Future<bool> uninstallApp(ApplicationPackage app) async => true;
+  Future<bool> uninstallApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async => true;
 
   @override
   bool isSupportedForProject(FlutterProject flutterProject) {
@@ -218,33 +234,60 @@ class GoogleChromeDevice extends ChromiumDevice {
 }
 
 /// The Microsoft Edge browser based on Chromium.
-// This is not currently used, see https://github.com/flutter/flutter/issues/55322
 class MicrosoftEdgeDevice extends ChromiumDevice {
   MicrosoftEdgeDevice({
     @required ChromiumLauncher chromiumLauncher,
     @required Logger logger,
     @required FileSystem fileSystem,
-  }) : super(
+    @required ProcessManager processManager,
+  }) : _processManager = processManager,
+       super(
          name: 'edge',
          chromeLauncher: chromiumLauncher,
          logger: logger,
          fileSystem: fileSystem,
        );
 
+  final ProcessManager _processManager;
+
+  // The first version of Edge with chromium support.
+  static const int _kFirstChromiumEdgeMajorVersion = 79;
+
   @override
   String get name => 'Edge';
 
+  Future<bool> _meetsVersionConstraint() async {
+    final String rawVersion = (await sdkNameAndVersion).replaceFirst('Microsoft Edge ', '');
+    final Version version = Version.parse(rawVersion);
+    if (version == null) {
+      return false;
+    }
+    return version.major >= _kFirstChromiumEdgeMajorVersion;
+  }
+
   @override
-  Future<String> get sdkNameAndVersion async => '<?>';
+  Future<String> get sdkNameAndVersion async => _sdkNameAndVersion ??= await _getSdkNameAndVersion();
+  String _sdkNameAndVersion;
+  Future<String> _getSdkNameAndVersion() async {
+    final ProcessResult result = await _processManager.run(<String>[
+      r'reg', 'query', r'HKEY_CURRENT_USER\Software\Microsoft\Edge\BLBeacon', '/v', 'version',
+    ]);
+    if (result.exitCode == 0) {
+      final List<String> parts = (result.stdout as String).split(RegExp(r'\s+'));
+      if (parts.length > 2) {
+        return 'Microsoft Edge ' + parts[parts.length - 2];
+      }
+    }
+    // Return a non-null string so that the tool can validate the version
+    // does not meet the constraint above in _meetsVersionConstraint.
+    return '';
+  }
 }
 
 class WebDevices extends PollingDeviceDiscovery {
   WebDevices({
     @required FileSystem fileSystem,
-    // TODO(jonahwilliams): the logger is overriden by the daemon command
-    // to support IDE integration. Accessing the global logger too early
-    // will grab the old stdout logger.
-    Logger logger,
+    @required Logger logger,
     @required Platform platform,
     @required ProcessManager processManager,
     @required FeatureFlags featureFlags,
@@ -264,12 +307,27 @@ class WebDevices extends PollingDeviceDiscovery {
       chromiumLauncher: ChromiumLauncher(
         browserFinder: findChromeExecutable,
         fileSystem: fileSystem,
-        logger: logger,
         platform: platform,
         processManager: processManager,
         operatingSystemUtils: operatingSystemUtils,
+        logger: logger,
       ),
     );
+    if (platform.isWindows) {
+      _edgeDevice = MicrosoftEdgeDevice(
+        chromiumLauncher: ChromiumLauncher(
+          browserFinder: findEdgeExecutable,
+          fileSystem: fileSystem,
+          platform: platform,
+          processManager: processManager,
+          operatingSystemUtils: operatingSystemUtils,
+          logger: logger,
+        ),
+        processManager: processManager,
+        logger: logger,
+        fileSystem: fileSystem,
+      );
+    }
     _webServerDevice = WebServerDevice(
       logger: logger,
     );
@@ -277,6 +335,7 @@ class WebDevices extends PollingDeviceDiscovery {
 
   GoogleChromeDevice _chromeDevice;
   WebServerDevice _webServerDevice;
+  MicrosoftEdgeDevice _edgeDevice;
   final FeatureFlags _featureFlags;
 
   @override
@@ -288,9 +347,12 @@ class WebDevices extends PollingDeviceDiscovery {
       return <Device>[];
     }
     return <Device>[
-      _webServerDevice,
+      if (WebServerDevice.showWebServerDevice)
+        _webServerDevice,
       if (_chromeDevice.isSupported())
         _chromeDevice,
+      if (await _edgeDevice?._meetsVersionConstraint() ?? false)
+        _edgeDevice,
     ];
   }
 
@@ -307,7 +369,7 @@ String parseVersionForWindows(String input) {
 /// A special device type to allow serving for arbitrary browsers.
 class WebServerDevice extends Device {
   WebServerDevice({
-    Logger logger,
+    @required Logger logger,
   }) : _logger = logger,
        super(
          'web-server',
@@ -316,7 +378,10 @@ class WebServerDevice extends Device {
           ephemeral: false,
        );
 
-  Logger _logger;
+  static const String kWebServerDeviceId = 'web-server';
+  static bool showWebServerDevice = false;
+
+  final Logger _logger;
 
   @override
   void clearLogs() { }
@@ -335,16 +400,25 @@ class WebServerDevice extends Device {
   }
 
   @override
-  Future<bool> installApp(ApplicationPackage app) async => true;
+  Future<bool> installApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async => true;
 
   @override
-  Future<bool> isAppInstalled(ApplicationPackage app) async => true;
+  Future<bool> isAppInstalled(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async => true;
 
   @override
   Future<bool> isLatestBuildInstalled(ApplicationPackage app) async => true;
 
   @override
   bool get supportsFlutterExit => false;
+
+  @override
+  bool supportsRuntimeMode(BuildMode buildMode) => buildMode != BuildMode.jitRelease;
 
   @override
   Future<bool> get isLocalEmulator async => false;
@@ -374,20 +448,27 @@ class WebServerDevice extends Device {
     Map<String, Object> platformArgs,
     bool prebuiltApplication = false,
     bool ipv6 = false,
+    String userIdentifier,
   }) async {
-    _logger ??= globals.logger;
     final String url = platformArgs['uri'] as String;
     if (debuggingOptions.startPaused) {
       _logger.printStatus('Waiting for connection from Dart debug extension at $url', emphasis: true);
     } else {
       _logger.printStatus('$mainPath is being served at $url', emphasis: true);
     }
+    _logger.printStatus(
+      'The web-server device requires the Dart Debug Chrome extension for debugging. '
+      'Consider using the Chrome or Edge devices for an improved development workflow.'
+    );
     _logger.sendEvent('app.webLaunchUrl', <String, dynamic>{'url': url, 'launched': false});
     return LaunchResult.succeeded(observatoryUri: url != null ? Uri.parse(url): null);
   }
 
   @override
-  Future<bool> stopApp(ApplicationPackage app) async {
+  Future<bool> stopApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async {
     return true;
   }
 
@@ -395,7 +476,10 @@ class WebServerDevice extends Device {
   Future<TargetPlatform> get targetPlatform async => TargetPlatform.web_javascript;
 
   @override
-  Future<bool> uninstallApp(ApplicationPackage app) async {
+  Future<bool> uninstallApp(
+    ApplicationPackage app, {
+    String userIdentifier,
+  }) async {
     return true;
   }
 

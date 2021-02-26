@@ -34,11 +34,11 @@ void main() {
     expect(material.clipBehavior, Clip.none);
     expect(material.color, const Color(0x00000000));
     expect(material.elevation, 0.0);
-    expect(material.shadowColor, const Color(0xff000000));
-    expect(material.textStyle.color, const Color(0xdd000000));
-    expect(material.textStyle.fontFamily, 'Roboto');
-    expect(material.textStyle.fontSize, 14);
-    expect(material.textStyle.fontWeight, FontWeight.w500);
+    expect(material.shadowColor, null);
+    expect(material.textStyle!.color, const Color(0xdd000000));
+    expect(material.textStyle!.fontFamily, 'Roboto');
+    expect(material.textStyle!.fontSize, 14);
+    expect(material.textStyle!.fontWeight, FontWeight.w500);
     expect(material.type, MaterialType.button);
 
     final Offset center = tester.getCenter(find.byType(OutlineButton));
@@ -53,11 +53,11 @@ void main() {
     expect(material.clipBehavior, Clip.none);
     expect(material.color, const Color(0x00000000));
     expect(material.elevation, 0.0);
-    expect(material.shadowColor, const Color(0xff000000));
-    expect(material.textStyle.color, const Color(0xdd000000));
-    expect(material.textStyle.fontFamily, 'Roboto');
-    expect(material.textStyle.fontSize, 14);
-    expect(material.textStyle.fontWeight, FontWeight.w500);
+    expect(material.shadowColor, null);
+    expect(material.textStyle!.color, const Color(0xdd000000));
+    expect(material.textStyle!.fontFamily, 'Roboto');
+    expect(material.textStyle!.fontSize, 14);
+    expect(material.textStyle!.fontWeight, FontWeight.w500);
     expect(material.type, MaterialType.button);
 
     // Disabled OutlineButton
@@ -77,11 +77,11 @@ void main() {
     expect(material.clipBehavior, Clip.none);
     expect(material.color, const Color(0x00000000));
     expect(material.elevation, 0.0);
-    expect(material.shadowColor, const Color(0xff000000));
-    expect(material.textStyle.color, const Color(0x61000000));
-    expect(material.textStyle.fontFamily, 'Roboto');
-    expect(material.textStyle.fontSize, 14);
-    expect(material.textStyle.fontWeight, FontWeight.w500);
+    expect(material.shadowColor, null);
+    expect(material.textStyle!.color, const Color(0x61000000));
+    expect(material.textStyle!.fontFamily, 'Roboto');
+    expect(material.textStyle!.fontSize, 14);
+    expect(material.textStyle!.fontWeight, FontWeight.w500);
     expect(material.type, MaterialType.button);
   });
 
@@ -130,7 +130,7 @@ void main() {
     addTearDown(gesture.removePointer);
 
     await tester.pump();
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
+    expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
 
     await tester.pumpWidget(
       Directionality(
@@ -145,7 +145,7 @@ void main() {
       ),
     );
 
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
+    expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
 
     // Test default cursor
     await tester.pumpWidget(
@@ -160,7 +160,7 @@ void main() {
       ),
     );
 
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.click);
+    expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.click);
 
     // Test default cursor when disabled
     await tester.pumpWidget(
@@ -175,7 +175,7 @@ void main() {
       ),
     );
 
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.basic);
+    expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.basic);
   });
 
   testWidgets('Does OutlineButton work with focus', (WidgetTester tester) async {
@@ -309,9 +309,9 @@ void main() {
         MaterialState.focused,
       };
       if (states.any(interactiveStates.contains)) {
-        return Colors.blue[900];
+        return Colors.blue[900]!;
       }
-      return Colors.blue[800];
+      return Colors.blue[800]!;
     }
 
     await tester.pumpWidget(
@@ -398,8 +398,8 @@ void main() {
       ),
     );
 
-    Color textColor() {
-      return tester.renderObject<RenderParagraph>(find.text('OutlineButton')).text.style.color;
+    Color? textColor() {
+      return tester.renderObject<RenderParagraph>(find.text('OutlineButton')).text.style!.color;
     }
 
     // Default, not disabled.
@@ -467,7 +467,7 @@ void main() {
       ),
     );
 
-    Color iconColor() => _iconStyle(tester, Icons.add).color;
+    Color? iconColor() => _iconStyle(tester, Icons.add).color;
     // Default, not disabled.
     expect(iconColor(), equals(defaultColor));
 
@@ -524,8 +524,8 @@ void main() {
       ),
     );
 
-    Color textColor() {
-      return tester.renderObject<RenderParagraph>(find.text('OutlineButton')).text.style.color;
+    Color? textColor() {
+      return tester.renderObject<RenderParagraph>(find.text('OutlineButton')).text.style!.color;
     }
 
     // Disabled.
@@ -670,7 +670,7 @@ void main() {
     bool wasPressed;
     Finder outlineButton;
 
-    Widget buildFrame({ VoidCallback onPressed, VoidCallback onLongPress }) {
+    Widget buildFrame({ VoidCallback? onPressed, VoidCallback? onLongPress }) {
       return Directionality(
         textDirection: TextDirection.ltr,
         child: OutlineButton(
@@ -710,7 +710,7 @@ void main() {
   });
 
   testWidgets("Outline button doesn't crash if disabled during a gesture", (WidgetTester tester) async {
-    Widget buildFrame(VoidCallback onPressed) {
+    Widget buildFrame(VoidCallback? onPressed) {
       return Directionality(
         textDirection: TextDirection.ltr,
         child: Theme(
@@ -736,7 +736,7 @@ void main() {
     const Color disabledBorderColor = Color(0xFFFF00FF);
     const double borderWidth = 4.0;
 
-    Widget buildFrame({ VoidCallback onPressed }) {
+    Widget buildFrame({ VoidCallback? onPressed }) {
       return Directionality(
         textDirection: TextDirection.ltr,
         child: Theme(
@@ -1003,7 +1003,7 @@ void main() {
 
     // Default value for dark Theme.of(context).canvasColor as well as
     // the OutlineButton fill color when the button has been pressed.
-    Color fillColor = Colors.grey[850];
+    Color fillColor = Colors.grey[850]!;
 
     // Initially the interior of the button is transparent.
     _checkPhysicalLayer(buttonElement, fillColor.withAlpha(0x00));
@@ -1024,7 +1024,7 @@ void main() {
 
     // Default value for light Theme.of(context).canvasColor as well as
     // the OutlineButton fill color when the button has been pressed.
-    fillColor = Colors.grey[50];
+    fillColor = Colors.grey[50]!;
 
     // Initially the interior of the button is transparent.
     // expect(button, paints..path(color: fillColor.withAlpha(0x00)));
@@ -1039,6 +1039,97 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
     _checkPhysicalLayer(buttonElement, fillColor.withAlpha(0x00));
+  });
+
+  testWidgets('OutlineButton respects the provided materialTapTargetSize', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          child: Center(
+            child: OutlineButton(
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              onPressed: () {},
+              child: const SizedBox(width: 50.0, height: 8.0),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Default Width of OutlineButton with MaterialTapTargetSize (88)
+    expect(tester.getSize(find.byType(OutlineButton)), const Size(88.0, 48.0));
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          child: Center(
+            child: OutlineButton(
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onPressed: () {},
+              child: const SizedBox(width: 50.0, height: 8.0),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Default Width of OutlineButton with MaterialTapTargetSize (88)
+    expect(tester.getSize(find.byType(OutlineButton)), const Size(88.0, 36.0));
+
+    final LocalKey key1 = UniqueKey();
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          child: Center(
+            child: OutlineButton.icon(
+              key: key1,
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              icon: const Icon(Icons.add_alarm),
+              label: const SizedBox(width: 50.0, height: 8.0),
+              onPressed: () { },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Size addAlarmIconSize = tester.getSize(find.byIcon(Icons.add_alarm));
+
+    // The expected width is the sum of:
+    // the width of the icon
+    // the gap between the icon and the label (8)
+    // the width of the label (50)
+    // the horizontal padding: start (12), end (16)
+    expect(tester.getSize(find.byKey(key1)), Size(86 + addAlarmIconSize.width, 48.0));
+
+    final LocalKey key2 = UniqueKey();
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          child: Center(
+            child: OutlineButton.icon(
+              key: key2,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              icon: const Icon(Icons.add),
+              label: const SizedBox(width: 50.0, height: 8.0),
+              onPressed: () { },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // The expected width is the sum of:
+    // the width of the icon
+    // the gap between the icon and the label (8)
+    // the width of the label (50)
+    // the horizontal padding: start (12), end (16)
+    final Size addIconSize = tester.getSize(find.byIcon(Icons.add));
+    expect(tester.getSize(find.byKey(key2)), Size(86 + addIconSize.width, 36.0));
   });
 
   testWidgets('OutlineButton onPressed and onLongPress callbacks are distinctly recognized', (WidgetTester tester) async {
@@ -1094,7 +1185,7 @@ void main() {
       );
     }
 
-    await buildTest(const VisualDensity());
+    await buildTest(VisualDensity.standard);
     final RenderBox box = tester.renderObject(find.byKey(key));
     Rect childRect = tester.getRect(find.byKey(childKey));
     await tester.pumpAndSettle();
@@ -1113,7 +1204,7 @@ void main() {
     expect(box.size, equals(const Size(108, 100)));
     expect(childRect, equals(const Rect.fromLTRB(350, 250, 450, 350)));
 
-    await buildTest(const VisualDensity(), useText: true);
+    await buildTest(VisualDensity.standard, useText: true);
     await tester.pumpAndSettle();
     childRect = tester.getRect(find.byKey(childKey));
     expect(box.size, equals(const Size(88, 48)));
@@ -1135,24 +1226,25 @@ void main() {
 
 PhysicalModelLayer _findPhysicalLayer(Element element) {
   expect(element, isNotNull);
-  RenderObject object = element.renderObject;
+  RenderObject? object = element.renderObject;
   while (object != null && object is! RenderRepaintBoundary && object is! RenderView) {
-    object = object.parent as RenderObject;
+    object = object.parent as RenderObject?;
   }
-  expect(object.debugLayer, isNotNull);
-  expect(object.debugLayer.firstChild, isA<PhysicalModelLayer>());
-  final PhysicalModelLayer layer = object.debugLayer.firstChild as PhysicalModelLayer;
-  final Layer child = layer.firstChild;
+  assert(object != null);
+  expect(object!.debugLayer, isNotNull);
+  expect(object.debugLayer!.firstChild, isA<PhysicalModelLayer>());
+  final PhysicalModelLayer layer = object.debugLayer!.firstChild! as PhysicalModelLayer;
+  final Layer child = layer.firstChild!;
   return child is PhysicalModelLayer ? child : layer;
 }
 
-void _checkPhysicalLayer(Element element, Color expectedColor, { Path clipPath, Rect clipRect }) {
+void _checkPhysicalLayer(Element element, Color expectedColor, { Path? clipPath, Rect? clipRect }) {
   final PhysicalModelLayer expectedLayer = _findPhysicalLayer(element);
   expect(expectedLayer.elevation, 0.0);
   expect(expectedLayer.color, expectedColor);
   if (clipPath != null) {
     expect(clipRect, isNotNull);
-    expect(expectedLayer.clipPath, coversSameAreaAs(clipPath, areaToCompare: clipRect.inflate(10.0)));
+    expect(expectedLayer.clipPath, coversSameAreaAs(clipPath, areaToCompare: clipRect!.inflate(10.0)));
   }
 }
 
@@ -1160,5 +1252,5 @@ TextStyle _iconStyle(WidgetTester tester, IconData icon) {
   final RichText iconRichText = tester.widget<RichText>(
     find.descendant(of: find.byIcon(icon), matching: find.byType(RichText)),
   );
-  return iconRichText.text.style;
+  return iconRichText.text.style!;
 }

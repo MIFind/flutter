@@ -29,6 +29,7 @@
   "copyButtonLabel": "Kopijuoti",
   "pasteButtonLabel": "Įklijuoti",
   "selectAllButtonLabel": "Pasirinkti viską",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Atsisakyti"
+  "tabSemanticsLabel": "$tabIndex skirtukas iš $tabCount",
+  "modalBarrierDismissLabel": "Atsisakyti",
+  "searchTextFieldPlaceholderLabel": "Paieška"
 }

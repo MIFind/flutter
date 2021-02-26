@@ -4,14 +4,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../rendering/mock_canvas.dart';
 import 'semantics_tester.dart';
 
 class TestState extends StatefulWidget {
-  const TestState({ Key key, this.child, this.log }) : super(key: key);
+  const TestState({ Key? key, required this.child, required this.log }) : super(key: key);
   final Widget child;
   final List<String> log;
   @override
@@ -82,8 +81,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paints..paragraph());
     RenderViewport renderViewport = tester.renderObject(find.byType(Viewport));
-    RenderSliver renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    RenderSliver renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>['created new state']);
@@ -101,8 +100,8 @@ void main() {
     expect(find.byType(SliverVisibility, skipOffstage: false), findsOneWidget);
     expect(find.byType(SliverVisibility, skipOffstage: false), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 0.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 0.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>[]);
     expect(find.byKey(anchor), findsNothing);
@@ -119,8 +118,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paints..path());
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 400.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 400.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>[]);
     expect(find.byKey(anchor), findsNothing);
@@ -138,8 +137,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paints..paragraph());
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>['created new state']);
     await tester.tap(find.byKey(anchor));
@@ -161,8 +160,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paints..paragraph());
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>['created new state']);
     await tester.tap(find.byKey(anchor));
@@ -184,8 +183,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>[]);
     await tester.tap(find.byKey(anchor));
@@ -209,8 +208,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>[]);
@@ -232,8 +231,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>[]);
@@ -255,12 +254,12 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>['created new state']);
-    await tester.tap(find.byKey(anchor));
+    await tester.tap(find.byKey(anchor), warnIfMissed: false);
     expect(log, <String>['created new state']);
     log.clear();
 
@@ -277,12 +276,12 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>[]);
-    await tester.tap(find.byKey(anchor));
+    await tester.tap(find.byKey(anchor), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -299,8 +298,8 @@ void main() {
     expect(find.byType(SliverVisibility, skipOffstage: false), findsOneWidget);
     expect(find.byType(SliverVisibility, skipOffstage: false), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 0.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 0.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>['created new state']);
@@ -319,8 +318,8 @@ void main() {
     expect(find.byType(SliverVisibility, skipOffstage: false), findsOneWidget);
     expect(find.byType(SliverVisibility, skipOffstage: false), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 0.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 0.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>['created new state']);
@@ -341,8 +340,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paints..paragraph());
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>[]);
@@ -362,8 +361,8 @@ void main() {
     expect(find.byType(SliverVisibility, skipOffstage: false), findsOneWidget);
     expect(find.byType(SliverVisibility, skipOffstage: false), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 0.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 0.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a false'), hasLength(0));
     expect(log, <String>[]);
@@ -382,8 +381,8 @@ void main() {
     expect(
       find.byType(SliverVisibility, skipOffstage: false), paints..paragraph());
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>[]);
@@ -403,8 +402,8 @@ void main() {
     expect(find.byType(SliverVisibility, skipOffstage: false), findsOneWidget);
     expect(find.byType(SliverVisibility, skipOffstage: false), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 0.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 0.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a false'), hasLength(0));
     expect(log, <String>[]);
@@ -422,8 +421,8 @@ void main() {
     expect(find.byType(SliverVisibility, skipOffstage: false), findsOneWidget);
     expect(find.byType(SliverVisibility, skipOffstage: false), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 0.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 0.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>[]);
@@ -440,8 +439,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paints..paragraph());
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>['created new state']);
@@ -458,8 +457,8 @@ void main() {
     expect(find.byType(SliverVisibility, skipOffstage: false), findsOneWidget);
     expect(find.byType(SliverVisibility, skipOffstage: false), paintsNothing);
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 0.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 0.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(0));
     expect(log, <String>[]);
@@ -476,8 +475,8 @@ void main() {
     expect(find.byType(SliverVisibility), findsOneWidget);
     expect(find.byType(SliverVisibility), paints..paragraph());
     renderViewport = tester.renderObject(find.byType(Viewport));
-    renderSliver = renderViewport.lastChild;
-    expect(renderSliver.geometry.scrollExtent, 14.0);
+    renderSliver = renderViewport.lastChild!;
+    expect(renderSliver.geometry!.scrollExtent, 14.0);
     expect(renderSliver.constraints.crossAxisExtent, 800.0);
     expect(semantics.nodesWith(label: 'a true'), hasLength(1));
     expect(log, <String>['created new state']);

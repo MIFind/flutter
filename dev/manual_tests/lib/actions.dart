@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -22,7 +21,7 @@ void main() {
 ///
 /// Instances of this class are returned from [UndoableAction]s and placed on
 /// the undo stack when they are invoked.
-class Memento extends Object with DiagnosticableMixin implements Diagnosticable {
+class Memento extends Object with Diagnosticable {
   const Memento({
     @required this.name,
     @required this.undo,
@@ -194,13 +193,13 @@ class UndoIntent extends Intent {
 class UndoAction extends Action<UndoIntent> {
   @override
   bool isEnabled(UndoIntent intent) {
-    final UndoableActionDispatcher manager = Actions.of(primaryFocus?.context ?? FocusDemo.appKey.currentContext, nullOk: true) as UndoableActionDispatcher;
+    final UndoableActionDispatcher manager = Actions.of(primaryFocus?.context ?? FocusDemo.appKey.currentContext) as UndoableActionDispatcher;
     return manager.canUndo;
   }
 
   @override
   void invoke(UndoIntent intent) {
-    final UndoableActionDispatcher manager = Actions.of(primaryFocus?.context ?? FocusDemo.appKey.currentContext, nullOk: true) as UndoableActionDispatcher;
+    final UndoableActionDispatcher manager = Actions.of(primaryFocus?.context ?? FocusDemo.appKey.currentContext) as UndoableActionDispatcher;
     manager?.undo();
   }
 }
@@ -212,13 +211,13 @@ class RedoIntent extends Intent {
 class RedoAction extends Action<RedoIntent> {
   @override
   bool isEnabled(RedoIntent intent) {
-    final UndoableActionDispatcher manager = Actions.of(primaryFocus.context, nullOk: true) as UndoableActionDispatcher;
+    final UndoableActionDispatcher manager = Actions.of(primaryFocus.context) as UndoableActionDispatcher;
     return manager.canRedo;
   }
 
   @override
   RedoAction invoke(RedoIntent intent) {
-    final UndoableActionDispatcher manager = Actions.of(primaryFocus.context, nullOk: true) as UndoableActionDispatcher;
+    final UndoableActionDispatcher manager = Actions.of(primaryFocus.context) as UndoableActionDispatcher;
     manager?.redo();
     return this;
   }
@@ -328,10 +327,18 @@ class _DemoButtonState extends State<DemoButton> {
 
   @override
   Widget build(BuildContext context) {
-    return FlatButton(
+    return TextButton(
       focusNode: _focusNode,
-      focusColor: Colors.red,
-      hoverColor: Colors.blue,
+      style: ButtonStyle(
+        foregroundColor: MaterialStateProperty.all<Color>(Colors.black),
+        overlayColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+          if (states.contains(MaterialState.focused))
+            return Colors.red;
+          if (states.contains(MaterialState.hovered))
+            return Colors.blue;
+          return null;
+        }),
+      ),
       onPressed: () => _handleOnPressed(),
       child: Text(widget.name, key: _nameKey),
     );
@@ -447,7 +454,7 @@ class _FocusDemoState extends State<FocusDemo> {
                           children: <Widget>[
                             Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: RaisedButton(
+                              child: ElevatedButton(
                                 child: const Text('UNDO'),
                                 onPressed: canUndo
                                     ? () {
@@ -458,7 +465,7 @@ class _FocusDemoState extends State<FocusDemo> {
                             ),
                             Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: RaisedButton(
+                              child: ElevatedButton(
                                 child: const Text('REDO'),
                                 onPressed: canRedo
                                     ? () {

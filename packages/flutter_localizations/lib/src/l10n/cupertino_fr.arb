@@ -19,6 +19,7 @@
   "copyButtonLabel": "Copier",
   "pasteButtonLabel": "Coller",
   "selectAllButtonLabel": "Tout sélect.",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Ignorer"
+  "tabSemanticsLabel": "Onglet $tabIndex sur $tabCount",
+  "modalBarrierDismissLabel": "Ignorer",
+  "searchTextFieldPlaceholderLabel": "Rechercher"
 }

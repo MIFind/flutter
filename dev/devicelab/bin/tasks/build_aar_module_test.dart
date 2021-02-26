@@ -2,13 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_devicelab/framework/apk_utils.dart';
 import 'package:flutter_devicelab/framework/framework.dart';
+import 'package:flutter_devicelab/framework/task_result.dart';
 import 'package:flutter_devicelab/framework/utils.dart';
 import 'package:path/path.dart' as path;
+
+final String platformLineSep = Platform.isWindows ? '\r\n': '\n';
+
 
 final String gradlew = Platform.isWindows ? 'gradlew.bat' : 'gradlew';
 final String gradlewExecutable = Platform.isWindows ? '.\\$gradlew' : './$gradlew';
@@ -41,7 +44,7 @@ Future<void> main() async {
       await inDirectory(tempDir, () async {
         await flutter(
           'create',
-          options: <String>['--org', 'io.flutter.devicelab', '--template', 'plugin', 'plugin_with_android'],
+          options: <String>['--org', 'io.flutter.devicelab', '--template', 'plugin', '--platforms=android', 'plugin_with_android'],
         );
       });
 
@@ -50,36 +53,21 @@ Future<void> main() async {
       await inDirectory(tempDir, () async {
         await flutter(
           'create',
-          options: <String>['--org', 'io.flutter.devicelab', '--template', 'plugin', 'plugin_without_android'],
+          options: <String>['--org', 'io.flutter.devicelab', '--template', 'plugin', '--platforms=ios', 'plugin_without_android'],
         );
       });
-
-      // Delete the android/ directory.
-      File(path.join(
-        tempDir.path,
-        'plugin_without_android',
-        'android'
-      )).deleteSync(recursive: true);
-
-      // Remove Android support from the plugin pubspec.yaml
-      final File pluginPubspec = File(path.join(tempDir.path, 'plugin_without_android', 'pubspec.yaml'));
-      pluginPubspec.writeAsStringSync(pluginPubspec.readAsStringSync().replaceFirst('''
-      android:
-        package: io.flutter.devicelab.plugin_without_android
-        pluginClass: PluginWithoutAndroidPlugin
-''', ''), flush: true);
 
       section('Add plugins to pubspec.yaml');
 
       final File modulePubspec = File(path.join(projectDir.path, 'pubspec.yaml'));
       String content = modulePubspec.readAsStringSync();
       content = content.replaceFirst(
-        '\ndependencies:\n',
-        '\ndependencies:\n'
-          '  plugin_with_android:\n'
-          '    path: ../plugin_with_android\n'
-          '  plugin_without_android:\n'
-          '    path: ../plugin_without_android\n',
+        '${platformLineSep}dependencies:$platformLineSep',
+        '${platformLineSep}dependencies:$platformLineSep'
+          '  plugin_with_android:$platformLineSep'
+          '    path: ../plugin_with_android$platformLineSep'
+          '  plugin_without_android:$platformLineSep'
+          '    path: ../plugin_without_android$platformLineSep',
       );
       modulePubspec.writeAsStringSync(content, flush: true);
 

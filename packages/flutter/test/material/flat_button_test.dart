@@ -34,12 +34,12 @@ void main() {
     expect(material.clipBehavior, Clip.none);
     expect(material.color, null);
     expect(material.elevation, 0.0);
-    expect(material.shadowColor, const Color(0xff000000));
+    expect(material.shadowColor, null);
     expect(material.shape, RoundedRectangleBorder(borderRadius: BorderRadius.circular(2.0)));
-    expect(material.textStyle.color, const Color(0xdd000000));
-    expect(material.textStyle.fontFamily, 'Roboto');
-    expect(material.textStyle.fontSize, 14);
-    expect(material.textStyle.fontWeight, FontWeight.w500);
+    expect(material.textStyle?.color, const Color(0xdd000000));
+    expect(material.textStyle?.fontFamily, 'Roboto');
+    expect(material.textStyle?.fontSize, 14);
+    expect(material.textStyle?.fontWeight, FontWeight.w500);
     expect(material.type, MaterialType.transparency);
 
     final Offset center = tester.getCenter(find.byType(FlatButton));
@@ -54,12 +54,12 @@ void main() {
     expect(material.clipBehavior, Clip.none);
     expect(material.color, null);
     expect(material.elevation, 0.0);
-    expect(material.shadowColor, const Color(0xff000000));
+    expect(material.shadowColor, null);
     expect(material.shape, RoundedRectangleBorder(borderRadius: BorderRadius.circular(2.0)));
-    expect(material.textStyle.color, const Color(0xdd000000));
-    expect(material.textStyle.fontFamily, 'Roboto');
-    expect(material.textStyle.fontSize, 14);
-    expect(material.textStyle.fontWeight, FontWeight.w500);
+    expect(material.textStyle?.color, const Color(0xdd000000));
+    expect(material.textStyle?.fontFamily, 'Roboto');
+    expect(material.textStyle?.fontSize, 14);
+    expect(material.textStyle?.fontWeight, FontWeight.w500);
     expect(material.type, MaterialType.transparency);
 
     // Disabled FlatButton
@@ -79,12 +79,12 @@ void main() {
     expect(material.clipBehavior, Clip.none);
     expect(material.color, null);
     expect(material.elevation, 0.0);
-    expect(material.shadowColor, const Color(0xff000000));
+    expect(material.shadowColor, null);
     expect(material.shape, RoundedRectangleBorder(borderRadius: BorderRadius.circular(2.0)));
-    expect(material.textStyle.color, const Color(0x61000000));
-    expect(material.textStyle.fontFamily, 'Roboto');
-    expect(material.textStyle.fontSize, 14);
-    expect(material.textStyle.fontWeight, FontWeight.w500);
+    expect(material.textStyle?.color, const Color(0x61000000));
+    expect(material.textStyle?.fontFamily, 'Roboto');
+    expect(material.textStyle?.fontSize, 14);
+    expect(material.textStyle?.fontWeight, FontWeight.w500);
     expect(material.type, MaterialType.transparency);
   });
 
@@ -169,9 +169,9 @@ void main() {
         MaterialState.focused,
       };
       if (states.any(interactiveStates.contains)) {
-        return Colors.blue[900];
+        return Colors.blue[900]!;
       }
-      return Colors.blue[800];
+      return Colors.blue[800]!;
     }
 
     await tester.pumpWidget(
@@ -258,8 +258,8 @@ void main() {
       ),
     );
 
-    Color textColor() {
-      return tester.renderObject<RenderParagraph>(find.text('FlatButton')).text.style.color;
+    Color? textColor() {
+      return tester.renderObject<RenderParagraph>(find.text('FlatButton')).text.style?.color;
     }
 
     // Default, not disabled.
@@ -327,7 +327,7 @@ void main() {
       ),
     );
 
-    Color iconColor() => _iconStyle(tester, Icons.add).color;
+    Color? iconColor() => _iconStyle(tester, Icons.add)?.color;
     // Default, not disabled.
     expect(iconColor(), equals(defaultColor));
 
@@ -384,8 +384,8 @@ void main() {
       ),
     );
 
-    Color textColor() {
-      return tester.renderObject<RenderParagraph>(find.text('FlatButton')).text.style.color;
+    Color? textColor() {
+      return tester.renderObject<RenderParagraph>(find.text('FlatButton')).text.style?.color;
     }
 
     // Disabled.
@@ -458,7 +458,7 @@ void main() {
     addTearDown(gesture.removePointer);
 
     await tester.pump();
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
+    expect(RendererBinding.instance?.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
 
     await tester.pumpWidget(
       Directionality(
@@ -474,7 +474,7 @@ void main() {
       ),
     );
 
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
+    expect(RendererBinding.instance?.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
 
     // Test default cursor
     await tester.pumpWidget(
@@ -490,7 +490,7 @@ void main() {
       ),
     );
 
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.click);
+    expect(RendererBinding.instance?.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.click);
 
     // Test default cursor when disabled
     await tester.pumpWidget(
@@ -506,7 +506,7 @@ void main() {
       ),
     );
 
-    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.basic);
+    expect(RendererBinding.instance?.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.basic);
   });
 
   testWidgets('Does FlatButton work with focus', (WidgetTester tester) async {
@@ -525,7 +525,7 @@ void main() {
       ),
     );
 
-    WidgetsBinding.instance.focusManager.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    WidgetsBinding.instance?.focusManager.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
     focusNode.requestFocus();
     await tester.pumpAndSettle();
 
@@ -693,7 +693,7 @@ void main() {
     bool wasPressed;
     Finder flatButton;
 
-    Widget buildFrame({ VoidCallback onPressed, VoidCallback onLongPress }) {
+    Widget buildFrame({ VoidCallback? onPressed, VoidCallback? onLongPress }) {
       return Directionality(
         textDirection: TextDirection.ltr,
         child: FlatButton(
@@ -785,7 +785,7 @@ void main() {
       );
     }
 
-    await buildTest(const VisualDensity());
+    await buildTest(VisualDensity.standard);
     final RenderBox box = tester.renderObject(find.byKey(key));
     Rect childRect = tester.getRect(find.byKey(childKey));
     await tester.pumpAndSettle();
@@ -804,7 +804,7 @@ void main() {
     expect(box.size, equals(const Size(108, 100)));
     expect(childRect, equals(const Rect.fromLTRB(350, 250, 450, 350)));
 
-    await buildTest(const VisualDensity(), useText: true);
+    await buildTest(VisualDensity.standard, useText: true);
     await tester.pumpAndSettle();
     childRect = tester.getRect(find.byKey(childKey));
     expect(box.size, equals(const Size(88, 48)));
@@ -822,9 +822,69 @@ void main() {
     expect(box.size, equals(const Size(76, 36)));
     expect(childRect, equals(const Rect.fromLTRB(372.0, 293.0, 428.0, 307.0)));
   });
+
+    testWidgets('FlatButton height parameter is used when provided', (WidgetTester tester) async {
+      const double buttonHeight = 100;
+      const double buttonDefaultMinHeight = 36.0;
+
+      Future<void> buildWidget({double? buttonHeight}) {
+        return tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: FlatButton(
+              height: buttonHeight,
+              child: const Text('button'),
+              onPressed: () {
+                /*ununsed*/
+              },
+            ),
+          ),
+        );
+      }
+
+      final Finder rawMaterialButtonFinder = find.byType(RawMaterialButton);
+
+      // If height is not provided we expect the default height to be used.
+      await buildWidget();
+      expect(tester.widget<RawMaterialButton>(rawMaterialButtonFinder).constraints.minHeight, buttonDefaultMinHeight);
+
+      // When the height is provided we expect that is used by the internal widget.
+      await buildWidget(buttonHeight: buttonHeight);
+      expect(tester.widget<RawMaterialButton>(rawMaterialButtonFinder).constraints.minHeight, buttonHeight);
+    });
+
+    testWidgets('FlatButton minWidth parameter is used when provided', (WidgetTester tester) async {
+      const double buttonMinWidth = 100;
+      const double buttonDefaultMinWidth = 88.0;
+
+      Future<void> buildWidget({double? buttonMinWidth}) {
+        return tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: FlatButton(
+              minWidth: buttonMinWidth,
+              child: const Text('button'),
+              onPressed: () {
+                /*ununsed*/
+              },
+            ),
+          ),
+        );
+      }
+
+      final Finder rawMaterialButtonFinder = find.byType(RawMaterialButton);
+
+      // If minWidth is not provided we expect the default minWidth to be used.
+      await buildWidget();
+      expect(tester.widget<RawMaterialButton>(rawMaterialButtonFinder).constraints.minWidth, buttonDefaultMinWidth);
+
+      // When minWidth is provided we expect that the internal widget uses it.
+      await buildWidget(buttonMinWidth: buttonMinWidth);
+      expect(tester.widget<RawMaterialButton>(rawMaterialButtonFinder).constraints.minWidth, buttonMinWidth);
+    });
 }
 
-TextStyle _iconStyle(WidgetTester tester, IconData icon) {
+TextStyle? _iconStyle(WidgetTester tester, IconData icon) {
   final RichText iconRichText = tester.widget<RichText>(
     find.descendant(of: find.byIcon(icon), matching: find.byType(RichText)),
   );

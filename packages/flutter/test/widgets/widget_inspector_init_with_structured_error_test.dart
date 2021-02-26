@@ -23,8 +23,8 @@ class StructuredErrorTestService extends TestWidgetInspectorService {
   static void runTests() {
     final StructuredErrorTestService service = StructuredErrorTestService();
     WidgetInspectorService.instance = service;
-    FlutterExceptionHandler testHandler;
-    FlutterExceptionHandler inspectorServiceErrorHandler;
+    FlutterExceptionHandler? testHandler;
+    FlutterExceptionHandler? inspectorServiceErrorHandler;
 
     setUpAll(() {
       inspectorServiceErrorHandler = FlutterError.onError;
@@ -40,12 +40,12 @@ class StructuredErrorTestService extends TestWidgetInspectorService {
       // what it was after WidgetInspectorService::initServiceExtensions ran.
       FlutterError.onError = inspectorServiceErrorHandler;
 
-      List<Map<Object, Object>> flutterErrorEvents =
+      List<Map<Object, Object?>> flutterErrorEvents =
           service.getEventsDispatched('Flutter.Error');
       expect(flutterErrorEvents, hasLength(0));
 
       // Create an error.
-      FlutterError.reportError(FlutterErrorDetailsForRendering(
+      FlutterError.reportError(FlutterErrorDetails(
         library: 'rendering library',
         context: ErrorDescription('during layout'),
         exception: StackTrace.current,

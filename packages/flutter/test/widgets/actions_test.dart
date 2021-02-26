@@ -26,7 +26,7 @@ class ThirdTestIntent extends SecondTestIntent {
 
 class TestAction extends CallbackAction<TestIntent> {
   TestAction({
-    @required OnInvokeCallback onInvoke,
+    required OnInvokeCallback onInvoke,
   })  : assert(onInvoke != null),
         super(onInvoke: onInvoke);
 
@@ -62,23 +62,23 @@ class TestAction extends CallbackAction<TestIntent> {
 class TestDispatcher extends ActionDispatcher {
   const TestDispatcher({this.postInvoke});
 
-  final PostInvokeCallback postInvoke;
+  final PostInvokeCallback? postInvoke;
 
   @override
-  Object invokeAction(Action<Intent> action, Intent intent, [BuildContext context]) {
-    final Object result = super.invokeAction(action, intent, context);
+  Object? invokeAction(Action<Intent> action, Intent intent, [BuildContext? context]) {
+    final Object? result = super.invokeAction(action, intent, context);
     postInvoke?.call(action: action, intent: intent, dispatcher: this);
     return result;
   }
 }
 
 class TestDispatcher1 extends TestDispatcher {
-  const TestDispatcher1({PostInvokeCallback postInvoke}) : super(postInvoke: postInvoke);
+  const TestDispatcher1({PostInvokeCallback? postInvoke}) : super(postInvoke: postInvoke);
 }
 
 void main() {
   testWidgets('CallbackAction passes correct intent when invoked.', (WidgetTester tester) async {
-    Intent passedIntent;
+    late Intent passedIntent;
     final TestAction action = TestAction(onInvoke: (Intent intent) {
       passedIntent = intent;
       return true;
@@ -92,7 +92,7 @@ void main() {
       await tester.pumpWidget(Container());
       bool invoked = false;
       const ActionDispatcher dispatcher = ActionDispatcher();
-      final Object result = dispatcher.invokeAction(
+      final Object? result = dispatcher.invokeAction(
         TestAction(
           onInvoke: (Intent intent) {
             invoked = true;
@@ -106,11 +106,11 @@ void main() {
     });
   });
   group(Actions, () {
-    Intent invokedIntent;
-    Action<Intent> invokedAction;
-    ActionDispatcher invokedDispatcher;
+    Intent? invokedIntent;
+    Action<Intent>? invokedAction;
+    ActionDispatcher? invokedDispatcher;
 
-    void collect({Action<Intent> action, Intent intent, ActionDispatcher dispatcher}) {
+    void collect({Action<Intent>? action, Intent? intent, ActionDispatcher? dispatcher}) {
       invokedIntent = intent;
       invokedAction = action;
       invokedDispatcher = dispatcher;
@@ -143,12 +143,90 @@ void main() {
       );
 
       await tester.pump();
-      final Object result = Actions.invoke(
-        containerKey.currentContext,
+      final Object? result = Actions.invoke(
+        containerKey.currentContext!,
         const TestIntent(),
       );
       expect(result, isTrue);
       expect(invoked, isTrue);
+    });
+    testWidgets('Actions widget can invoke actions with default dispatcher and maybeInvoke', (WidgetTester tester) async {
+      final GlobalKey containerKey = GlobalKey();
+      bool invoked = false;
+
+      await tester.pumpWidget(
+        Actions(
+          actions: <Type, Action<Intent>>{
+            TestIntent: TestAction(
+              onInvoke: (Intent intent) {
+                invoked = true;
+                return invoked;
+              },
+            ),
+          },
+          child: Container(key: containerKey),
+        ),
+      );
+
+      await tester.pump();
+      final Object? result = Actions.maybeInvoke(
+        containerKey.currentContext!,
+        const TestIntent(),
+      );
+      expect(result, isTrue);
+      expect(invoked, isTrue);
+    });
+    testWidgets('maybeInvoke returns null when no action is found', (WidgetTester tester) async {
+      final GlobalKey containerKey = GlobalKey();
+      bool invoked = false;
+
+      await tester.pumpWidget(
+        Actions(
+          actions: <Type, Action<Intent>>{
+            TestIntent: TestAction(
+              onInvoke: (Intent intent) {
+                invoked = true;
+                return invoked;
+              },
+            ),
+          },
+          child: Container(key: containerKey),
+        ),
+      );
+
+      await tester.pump();
+      final Object? result = Actions.maybeInvoke(
+        containerKey.currentContext!,
+        DoNothingIntent(),
+      );
+      expect(result, isNull);
+      expect(invoked, isFalse);
+    });
+    testWidgets('invoke throws when no action is found', (WidgetTester tester) async {
+      final GlobalKey containerKey = GlobalKey();
+      bool invoked = false;
+
+      await tester.pumpWidget(
+        Actions(
+          actions: <Type, Action<Intent>>{
+            TestIntent: TestAction(
+              onInvoke: (Intent intent) {
+                invoked = true;
+                return invoked;
+              },
+            ),
+          },
+          child: Container(key: containerKey),
+        ),
+      );
+
+      await tester.pump();
+      final Object? result = Actions.maybeInvoke(
+        containerKey.currentContext!,
+        DoNothingIntent(),
+      );
+      expect(result, isNull);
+      expect(invoked, isFalse);
     });
     testWidgets('Actions widget can invoke actions with custom dispatcher', (WidgetTester tester) async {
       final GlobalKey containerKey = GlobalKey();
@@ -172,8 +250,8 @@ void main() {
       );
 
       await tester.pump();
-      final Object result = Actions.invoke<TestIntent>(
-        containerKey.currentContext,
+      final Object? result = Actions.invoke<TestIntent>(
+        containerKey.currentContext!,
         intent,
       );
       expect(result, isTrue);
@@ -206,8 +284,8 @@ void main() {
       );
 
       await tester.pump();
-      final Object result = Actions.invoke<TestIntent>(
-        containerKey.currentContext,
+      final Object? result = Actions.invoke<TestIntent>(
+        containerKey.currentContext!,
         intent,
       );
       expect(result, isTrue);
@@ -241,8 +319,8 @@ void main() {
       );
 
       await tester.pump();
-      final Object result = Actions.invoke<TestIntent>(
-        containerKey.currentContext,
+      final Object? result = Actions.invoke<TestIntent>(
+        containerKey.currentContext!,
         intent,
       );
       expect(result, isTrue);
@@ -264,10 +342,7 @@ void main() {
       );
 
       await tester.pump();
-      final ActionDispatcher dispatcher = Actions.of(
-        containerKey.currentContext,
-        nullOk: true,
-      );
+      final ActionDispatcher dispatcher = Actions.of(containerKey.currentContext!);
       expect(dispatcher, equals(testDispatcher));
     });
     testWidgets('Action can be found with find', (WidgetTester tester) async {
@@ -294,9 +369,9 @@ void main() {
       );
 
       await tester.pump();
-      expect(Actions.find<TestIntent>(containerKey.currentContext), equals(testAction));
-      expect(() => Actions.find<DoNothingIntent>(containerKey.currentContext), throwsAssertionError);
-      expect(Actions.find<DoNothingIntent>(containerKey.currentContext, nullOk: true), isNull);
+      expect(Actions.find<TestIntent>(containerKey.currentContext!), equals(testAction));
+      expect(() => Actions.find<DoNothingIntent>(containerKey.currentContext!), throwsAssertionError);
+      expect(Actions.maybeFind<DoNothingIntent>(containerKey.currentContext!), isNull);
 
       await tester.pumpWidget(
         Actions(
@@ -314,9 +389,9 @@ void main() {
       );
 
       await tester.pump();
-      expect(Actions.find<TestIntent>(containerKey.currentContext), equals(testAction));
-      expect(() => Actions.find<DoNothingIntent>(containerKey.currentContext), throwsAssertionError);
-      expect(Actions.find<DoNothingIntent>(containerKey.currentContext, nullOk: true), isNull);
+      expect(Actions.find<TestIntent>(containerKey.currentContext!), equals(testAction));
+      expect(() => Actions.find<DoNothingIntent>(containerKey.currentContext!), throwsAssertionError);
+      expect(Actions.maybeFind<DoNothingIntent>(containerKey.currentContext!), isNull);
     });
     testWidgets('FocusableActionDetector keeps track of focus and hover even when disabled.', (WidgetTester tester) async {
       FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
@@ -405,7 +480,7 @@ void main() {
       addTearDown(gesture.removePointer);
       await tester.pump();
 
-      expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
+      expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.text);
 
       // Test default
       await tester.pumpWidget(
@@ -419,7 +494,109 @@ void main() {
         ),
       );
 
-      expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.forbidden);
+      expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.forbidden);
+    });
+    testWidgets('Actions.invoke returns the value of Action.invoke', (WidgetTester tester) async {
+      final GlobalKey containerKey = GlobalKey();
+      final Object sentinel = Object();
+      bool invoked = false;
+      const TestIntent intent = TestIntent();
+      final Action<Intent> testAction = TestAction(
+        onInvoke: (Intent intent) {
+          invoked = true;
+          return sentinel;
+        },
+      );
+
+      await tester.pumpWidget(
+        Actions(
+          dispatcher: TestDispatcher(postInvoke: collect),
+          actions: <Type, Action<Intent>>{
+            TestIntent: testAction,
+          },
+          child: Container(key: containerKey),
+        ),
+      );
+
+      await tester.pump();
+      final Object? result = Actions.invoke<TestIntent>(
+        containerKey.currentContext!,
+        intent,
+      );
+      expect(identical(result, sentinel), isTrue);
+      expect(invoked, isTrue);
+    });
+    testWidgets('ContextAction can return null', (WidgetTester tester) async {
+      final GlobalKey containerKey = GlobalKey();
+      const TestIntent intent = TestIntent();
+      final TestContextAction testAction = TestContextAction();
+
+      await tester.pumpWidget(
+        Actions(
+          dispatcher: TestDispatcher1(postInvoke: collect),
+          actions: <Type, Action<Intent>>{
+            TestIntent: testAction,
+          },
+          child: Container(key: containerKey),
+        ),
+      );
+
+      await tester.pump();
+      final Object? result = Actions.invoke<TestIntent>(
+        containerKey.currentContext!,
+        intent,
+      );
+      expect(result, isNull);
+      expect(invokedIntent, equals(intent));
+      expect(invokedAction, equals(testAction));
+      expect(invokedDispatcher.runtimeType, equals(TestDispatcher1));
+      expect(testAction.capturedContexts.single, containerKey.currentContext);
+    });
+    testWidgets('Disabled actions allow propagation to an ancestor', (WidgetTester tester) async {
+      final GlobalKey containerKey = GlobalKey();
+      bool invoked = false;
+      const TestIntent intent = TestIntent();
+      final TestAction enabledTestAction = TestAction(
+        onInvoke: (Intent intent) {
+          invoked = true;
+          return invoked;
+        },
+      );
+      enabledTestAction.enabled = true;
+      final TestAction disabledTestAction = TestAction(
+        onInvoke: (Intent intent) {
+          invoked = true;
+          return invoked;
+        },
+      );
+      disabledTestAction.enabled = false;
+
+      await tester.pumpWidget(
+        Actions(
+          dispatcher: TestDispatcher1(postInvoke: collect),
+          actions: <Type, Action<Intent>>{
+            TestIntent: enabledTestAction,
+          },
+          child: Actions(
+            dispatcher: TestDispatcher(postInvoke: collect),
+            actions: <Type, Action<Intent>>{
+              TestIntent: disabledTestAction,
+            },
+            child: Container(key: containerKey),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      final Object? result = Actions.invoke<TestIntent>(
+        containerKey.currentContext!,
+        intent,
+      );
+      expect(result, isTrue);
+      expect(invoked, isTrue);
+      expect(invokedIntent, equals(intent));
+      expect(invokedAction, equals(enabledTestAction));
+      expect(invokedDispatcher.runtimeType, equals(TestDispatcher1));
     });
   });
 
@@ -477,24 +654,24 @@ void main() {
         ),
       );
 
-      Object result = Actions.invoke(
-        containerKey.currentContext,
+      Object? result = Actions.invoke(
+        containerKey.currentContext!,
         const TestIntent(),
       );
       expect(enabled1, isFalse);
-      expect(result, isFalse);
+      expect(result, isNull);
       expect(invoked1, isFalse);
 
       action1.enabled = true;
       result = Actions.invoke(
-        containerKey.currentContext,
+        containerKey.currentContext!,
         const TestIntent(),
       );
       expect(enabled1, isTrue);
       expect(result, isTrue);
       expect(invoked1, isTrue);
 
-      bool enabledChanged;
+      bool? enabledChanged;
       await tester.pumpWidget(
         Actions(
           actions: <Type, Action<Intent>>{
@@ -516,18 +693,18 @@ void main() {
 
       await tester.pump();
       result = Actions.invoke<TestIntent>(
-        containerKey.currentContext,
+        containerKey.currentContext!,
         const SecondTestIntent(),
       );
       expect(enabledChanged, isNull);
       expect(enabled2, isFalse);
-      expect(result, isFalse);
+      expect(result, isNull);
       expect(invoked2, isFalse);
 
       action2.enabled = true;
       expect(enabledChanged, isTrue);
       result = Actions.invoke<TestIntent>(
-        containerKey.currentContext,
+        containerKey.currentContext!,
         const SecondTestIntent(),
       );
       expect(enabled2, isTrue);
@@ -590,17 +767,18 @@ void main() {
 
   group(FocusableActionDetector, () {
     const Intent intent = TestIntent();
-    bool invoked;
-    bool hovering;
-    bool focusing;
-    FocusNode focusNode;
-    Action<Intent> testAction;
+    late bool invoked;
+    late bool hovering;
+    late bool focusing;
+    late FocusNode focusNode;
+    late Action<Intent> testAction;
 
     Future<void> pumpTest(
         WidgetTester tester, {
           bool enabled = true,
           bool directional = false,
-          @required Key key,
+          bool supplyCallbacks = true,
+          required Key key,
         }) async {
       await tester.pumpWidget(
         MediaQuery(
@@ -620,8 +798,8 @@ void main() {
                 actions: <Type, Action<Intent>>{
                   TestIntent: testAction,
                 },
-                onShowHoverHighlight: (bool value) => hovering = value,
-                onShowFocusHighlight: (bool value) => focusing = value,
+                onShowHoverHighlight: supplyCallbacks ? (bool value) => hovering = value : null,
+                onShowFocusHighlight: supplyCallbacks ? (bool value) => focusing = value : null,
                 child: Container(width: 100, height: 100, key: key),
               ),
             ),
@@ -709,6 +887,40 @@ void main() {
       await tester.pump();
       expect(focusing, isTrue);
     });
+    testWidgets('FocusableActionDetector can be used without callbacks', (WidgetTester tester) async {
+      FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+      final GlobalKey containerKey = GlobalKey();
+
+      await pumpTest(tester, enabled: true, key: containerKey, supplyCallbacks: false);
+      focusNode.requestFocus();
+      await tester.pump();
+      final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.byKey(containerKey)));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      expect(hovering, isFalse);
+      expect(focusing, isFalse);
+      expect(invoked, isTrue);
+
+      invoked = false;
+      await pumpTest(tester, enabled: false, key: containerKey, supplyCallbacks: false);
+      expect(hovering, isFalse);
+      expect(focusing, isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(invoked, isFalse);
+      await pumpTest(tester, enabled: true, key: containerKey, supplyCallbacks: false);
+      expect(focusing, isFalse);
+      expect(hovering, isFalse);
+      await pumpTest(tester, enabled: false, key: containerKey, supplyCallbacks: false);
+      expect(focusing, isFalse);
+      expect(hovering, isFalse);
+      await gesture.moveTo(Offset.zero);
+      await pumpTest(tester, enabled: true, key: containerKey, supplyCallbacks: false);
+      expect(hovering, isFalse);
+      expect(focusing, isFalse);
+    });
   });
 
   group('Diagnostics', () {
@@ -769,6 +981,16 @@ void main() {
       expect(description.length, equals(2));
       expect(description[0], equalsIgnoringHashCodes('dispatcher: ActionDispatcher#00000'));
       expect(description[1], equalsIgnoringHashCodes('actions: {TestIntent: TestAction#00000}'));
-    }, skip: isBrowser);
+    });
   });
+}
+
+class TestContextAction extends ContextAction<TestIntent> {
+  List<BuildContext?> capturedContexts = <BuildContext?>[];
+
+  @override
+  Object? invoke(covariant TestIntent intent, [BuildContext? context]) {
+    capturedContexts.add(context);
+    return null;
+  }
 }

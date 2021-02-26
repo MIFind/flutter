@@ -2,19 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:async';
 
 import 'package:meta/meta.dart';
-import 'package:package_config/package_config.dart';
 
 import '../artifacts.dart';
 import '../base/file_system.dart';
-import '../base/terminal.dart';
 import '../build_info.dart';
 import '../bundle.dart';
-import '../codegen.dart';
 import '../compile.dart';
-import '../dart/package_map.dart';
 import '../globals.dart' as globals;
 import '../project.dart';
 
@@ -39,14 +37,17 @@ class TestCompiler {
   ///
   /// [flutterProject] is the project for which we are running tests.
   TestCompiler(
-    this.buildMode,
-    this.trackWidgetCreation,
+    this.buildInfo,
     this.flutterProject,
-    this.dartExperiments,
-  ) : testFilePath = getKernelPathForTransformerOptions(
-        globals.fs.path.join(flutterProject.directory.path, getBuildDirectory(), 'testfile.dill'),
-        trackWidgetCreation: trackWidgetCreation,
-      ) {
+  ) : testFilePath = globals.fs.path.join(
+        flutterProject.directory.path,
+        getBuildDirectory(),
+        'test_cache',
+        getDefaultCachedKernelPath(
+          trackWidgetCreation: buildInfo.trackWidgetCreation,
+          dartDefines: buildInfo.dartDefines,
+          extraFrontEndOptions: buildInfo.extraFrontEndOptions,
+        )) {
     // Compiler maintains and updates single incremental dill file.
     // Incremental compilation requests done for each test copy that file away
     // for independent execution.
@@ -63,19 +64,18 @@ class TestCompiler {
   final StreamController<_CompilationRequest> compilerController = StreamController<_CompilationRequest>();
   final List<_CompilationRequest> compilationQueue = <_CompilationRequest>[];
   final FlutterProject flutterProject;
-  final BuildMode buildMode;
-  final bool trackWidgetCreation;
+  final BuildInfo buildInfo;
   final String testFilePath;
-  final List<String> dartExperiments;
 
 
   ResidentCompiler compiler;
   File outputDill;
-  // Whether to report compiler messages.
-  bool _suppressOutput = false;
 
   Future<String> compile(Uri mainDart) {
     final Completer<String> completer = Completer<String>();
+    if (compilerController.isClosed) {
+      return null;
+    }
     compilerController.add(_CompilationRequest(mainDart, completer));
     return completer.future;
   }
@@ -99,25 +99,21 @@ class TestCompiler {
   Future<ResidentCompiler> createCompiler() async {
     final ResidentCompiler residentCompiler = ResidentCompiler(
       globals.artifacts.getArtifactPath(Artifact.flutterPatchedSdkPath),
-      buildMode: buildMode,
-      trackWidgetCreation: trackWidgetCreation,
-      compilerMessageConsumer: _reportCompilerMessage,
+      artifacts: globals.artifacts,
+      logger: globals.logger,
+      processManager: globals.processManager,
+      buildMode: buildInfo.mode,
+      trackWidgetCreation: buildInfo.trackWidgetCreation,
       initializeFromDill: testFilePath,
       unsafePackageSerialization: false,
-      dartDefines: const <String>[],
-      packagesPath: globalPackagesPath,
-      experimentalFlags: dartExperiments,
+      dartDefines: buildInfo.dartDefines,
+      packagesPath: buildInfo.packagesPath,
+      extraFrontEndOptions: buildInfo.extraFrontEndOptions,
+      platform: globals.platform,
+      testCompilation: true,
     );
-    if (flutterProject.hasBuilders) {
-      return CodeGeneratingResidentCompiler.create(
-        residentCompiler: residentCompiler,
-        flutterProject: flutterProject,
-      );
-    }
     return residentCompiler;
   }
-
-  PackageConfig _packageConfig;
 
   // Handle a compilation request.
   Future<void> _onCompilationRequest(_CompilationRequest request) async {
@@ -129,10 +125,6 @@ class TestCompiler {
     if (!isEmpty) {
       return;
     }
-    _packageConfig ??= await loadPackageConfigWithLogging(
-      globals.fs.file(globalPackagesPath),
-      logger: globals.logger,
-    );
     while (compilationQueue.isNotEmpty) {
       final _CompilationRequest request = compilationQueue.first;
       globals.printTrace('Compiling ${request.mainUri}');
@@ -142,12 +134,11 @@ class TestCompiler {
         compiler = await createCompiler();
         firstCompile = true;
       }
-      _suppressOutput = false;
       final CompilerOutput compilerOutput = await compiler.recompile(
         request.mainUri,
         <Uri>[request.mainUri],
         outputPath: outputDill.path,
-        packageConfig: _packageConfig,
+        packageConfig: buildInfo.packageConfig,
       );
       final String outputPath = compilerOutput?.outputFilename;
 
@@ -167,7 +158,9 @@ class TestCompiler {
           // The idea is to keep the cache file up-to-date and include as
           // much as possible in an effort to re-use as many packages as
           // possible.
-          globals.fsUtils.ensureDirectoryExists(testFilePath);
+          if (!testCache.parent.existsSync()) {
+            testCache.parent.createSync(recursive: true);
+          }
           await outputFile.copy(testFilePath);
         }
         request.result.complete(kernelReadyToRun.path);
@@ -178,21 +171,5 @@ class TestCompiler {
       // Only remove now when we finished processing the element
       compilationQueue.removeAt(0);
     }
-  }
-
-  void _reportCompilerMessage(String message, {bool emphasis, TerminalColor color}) {
-    if (_suppressOutput) {
-      return;
-    }
-    if (message.startsWith("Error: Could not resolve the package 'flutter_test'")) {
-      globals.printTrace(message);
-      globals.printError('\n\nFailed to load test harness. Are you missing a dependency on flutter_test?\n',
-        emphasis: emphasis,
-        color: color,
-      );
-      _suppressOutput = true;
-      return;
-    }
-    globals.printError(message);
   }
 }

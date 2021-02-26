@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_driver/driver_extension.dart';
 
@@ -13,7 +12,7 @@ void main() {
     home: Material(
       child: Builder(
         builder: (BuildContext context) {
-          return FlatButton(
+          return TextButton(
             child: const Text(
               'flutter drive lib/xxx.dart',
               textDirection: TextDirection.ltr,

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_driver/driver_extension.dart';
 
 void main() {
@@ -37,7 +36,7 @@ class DriverTestAppState extends State<DriverTestApp> {
                 Expanded(
                   child: Text(present ? 'present' : 'absent'),
                 ),
-                RaisedButton(
+                ElevatedButton(
                   child: const Text(
                     'toggle',
                     key: ValueKey<String>('togglePresent'),

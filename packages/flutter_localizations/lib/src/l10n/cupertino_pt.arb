@@ -19,6 +19,7 @@
   "copyButtonLabel": "Copiar",
   "pasteButtonLabel": "Colar",
   "selectAllButtonLabel": "Selecionar Tudo",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Dispensar"
+  "tabSemanticsLabel": "Guia $tabIndex de $tabCount",
+  "modalBarrierDismissLabel": "Dispensar",
+  "searchTextFieldPlaceholderLabel": "Pesquisar"
 }

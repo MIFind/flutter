@@ -6,8 +6,6 @@ import 'dart:math' as math;
 import 'dart:ui' show window;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -16,7 +14,7 @@ import '../rendering/mock_canvas.dart';
 import '../widgets/semantics_tester.dart';
 
 const List<String> menuItems = <String>['one', 'two', 'three', 'four'];
-final ValueChanged<String> onChanged = (_) { };
+final ValueChanged<String?> onChanged = (_) { };
 
 final Type dropdownButtonType = DropdownButton<String>(
   onChanged: (_) { },
@@ -31,32 +29,32 @@ Finder _iconRichText(Key iconKey) {
 }
 
 Widget buildDropdown({
-    bool isFormField,
-    Key buttonKey,
-    String value = 'two',
-    ValueChanged<String> onChanged,
-    VoidCallback onTap,
-    Widget icon,
-    Color iconDisabledColor,
-    Color iconEnabledColor,
+    required bool isFormField,
+    Key? buttonKey,
+    String? value = 'two',
+    ValueChanged<String?>? onChanged,
+    VoidCallback? onTap,
+    Widget? icon,
+    Color? iconDisabledColor,
+    Color? iconEnabledColor,
     double iconSize = 24.0,
     bool isDense = false,
     bool isExpanded = false,
-    Widget hint,
-    Widget disabledHint,
-    Widget underline,
-    List<String> items = menuItems,
-    List<Widget> Function(BuildContext) selectedItemBuilder,
-    double itemHeight = kMinInteractiveDimension,
+    Widget? hint,
+    Widget? disabledHint,
+    Widget? underline,
+    List<String>? items = menuItems,
+    List<Widget> Function(BuildContext)? selectedItemBuilder,
+    double? itemHeight = kMinInteractiveDimension,
     Alignment alignment = Alignment.center,
     TextDirection textDirection = TextDirection.ltr,
-    Size mediaSize,
-    FocusNode focusNode,
+    Size? mediaSize,
+    FocusNode? focusNode,
     bool autofocus = false,
-    Color focusColor,
-    Color dropdownColor,
+    Color? focusColor,
+    Color? dropdownColor,
   }) {
-  final List<DropdownMenuItem<String>> listItems = items == null
+  final List<DropdownMenuItem<String>>? listItems = items == null
       ? null
       : items.map<DropdownMenuItem<String>>((String item) {
     return DropdownMenuItem<String>(
@@ -117,29 +115,29 @@ Widget buildDropdown({
 }
 
 Widget buildFrame({
-  Key buttonKey,
-  String value = 'two',
-  ValueChanged<String> onChanged,
-  VoidCallback onTap,
-  Widget icon,
-  Color iconDisabledColor,
-  Color iconEnabledColor,
+  Key? buttonKey,
+  String? value = 'two',
+  ValueChanged<String?>? onChanged,
+  VoidCallback? onTap,
+  Widget? icon,
+  Color? iconDisabledColor,
+  Color? iconEnabledColor,
   double iconSize = 24.0,
   bool isDense = false,
   bool isExpanded = false,
-  Widget hint,
-  Widget disabledHint,
-  Widget underline,
-  List<String> items = menuItems,
-  List<Widget> Function(BuildContext) selectedItemBuilder,
-  double itemHeight = kMinInteractiveDimension,
+  Widget? hint,
+  Widget? disabledHint,
+  Widget? underline,
+  List<String>? items = menuItems,
+  List<Widget> Function(BuildContext)? selectedItemBuilder,
+  double? itemHeight = kMinInteractiveDimension,
   Alignment alignment = Alignment.center,
   TextDirection textDirection = TextDirection.ltr,
-  Size mediaSize,
-  FocusNode focusNode,
+  Size? mediaSize,
+  FocusNode? focusNode,
   bool autofocus = false,
-  Color focusColor,
-  Color dropdownColor,
+  Color? focusColor,
+  Color? dropdownColor,
   bool isFormField = false,
 }) {
   return TestApp(
@@ -179,15 +177,15 @@ Widget buildFrame({
 
 class TestApp extends StatefulWidget {
   const TestApp({
-    Key key,
-    this.textDirection,
-    this.child,
+    Key? key,
+    required this.textDirection,
+    required this.child,
     this.mediaSize,
   }) : super(key: key);
 
   final TextDirection textDirection;
   final Widget child;
-  final Size mediaSize;
+  final Size? mediaSize;
 
   @override
   _TestAppState createState() => _TestAppState();
@@ -237,7 +235,7 @@ void checkSelectedItemTextGeometry(WidgetTester tester, String value) {
 void verifyPaintedShadow(Finder customPaint, int elevation) {
   const Rect originalRectangle = Rect.fromLTRB(0.0, 0.0, 800, 208.0);
 
-  final List<BoxShadow> boxShadows = List<BoxShadow>.generate(3, (int index) => kElevationToShadow[elevation][index]);
+  final List<BoxShadow> boxShadows = List<BoxShadow>.generate(3, (int index) => kElevationToShadow[elevation]![index]);
   final List<RRect> rrects = List<RRect>.generate(3, (int index) {
     return RRect.fromRectAndRadius(
       originalRectangle.shift(
@@ -257,7 +255,7 @@ void verifyPaintedShadow(Finder customPaint, int elevation) {
   );
 }
 
-Future<void> checkDropdownColor(WidgetTester tester, {Color color, bool isFormField = false }) async {
+Future<void> checkDropdownColor(WidgetTester tester, {Color? color, bool isFormField = false }) async {
   const String text = 'foo';
   await tester.pumpWidget(
     MaterialApp(
@@ -338,8 +336,8 @@ void main() {
   });
 
   testWidgets('Dropdown button control test', (WidgetTester tester) async {
-    String value = 'one';
-    void didChangeValue(String newValue) {
+    String? value = 'one';
+    void didChangeValue(String? newValue) {
       value = newValue;
     }
 
@@ -360,7 +358,7 @@ void main() {
 
     expect(value, equals('three'));
 
-    await tester.tap(find.text('three'));
+    await tester.tap(find.text('three'), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // finish the menu animation
 
@@ -377,8 +375,8 @@ void main() {
   });
 
   testWidgets('Dropdown button with no app', (WidgetTester tester) async {
-    String value = 'one';
-    void didChangeValue(String newValue) {
+    String? value = 'one';
+    void didChangeValue(String? newValue) {
       value = newValue;
     }
 
@@ -416,7 +414,7 @@ void main() {
 
     expect(value, equals('three'));
 
-    await tester.tap(find.text('three'));
+    await tester.tap(find.text('three'), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // finish the menu animation
 
@@ -447,7 +445,7 @@ void main() {
           home: Scaffold(
             body: DropdownButton<String>(
               value: 'c',
-              onChanged: (String newValue) {},
+              onChanged: (String? newValue) {},
               items: itemsWithDuplicateValues,
             ),
           ),
@@ -478,7 +476,7 @@ void main() {
           home: Scaffold(
             body: DropdownButton<String>(
               value: 'e',
-              onChanged: (String newValue) {},
+              onChanged: (String? newValue) {},
               items: itemsWithDuplicateValues,
             ),
           ),
@@ -497,7 +495,7 @@ void main() {
   testWidgets('Dropdown form field uses form field state', (WidgetTester tester) async {
     final Key buttonKey = UniqueKey();
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    String value;
+    String? value;
     await tester.pumpWidget(
         StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
@@ -518,9 +516,9 @@ void main() {
                             child: Text(val)
                         );
                       }).toList(),
-                      validator: (String v) => v == null ? 'Must select value' : null,
-                      onChanged: (String newValue) {},
-                      onSaved: (String v) {
+                      validator: (String? v) => v == null ? 'Must select value' : null,
+                      onChanged: (String? newValue) {},
+                      onSaved: (String? v) {
                         setState(() {
                           value = v;
                         });
@@ -534,19 +532,19 @@ void main() {
     );
     int getIndex() {
       final IndexedStack stack = tester.element(find.byType(IndexedStack)).widget as IndexedStack;
-      return stack.index;
+      return stack.index!;
     }
     // Initial value of null displays hint
     expect(value, equals(null));
     expect(getIndex(), 4);
-    await tester.tap(find.text('Select Value'));
+    await tester.tap(find.text('Select Value'), warnIfMissed: false);
     await tester.pumpAndSettle();
     await tester.tap(find.text('three').last);
     await tester.pumpAndSettle();
     expect(getIndex(), 2);
     // Changes only made to FormField state until form saved
     expect(value, equals(null));
-    final FormState form = formKey.currentState;
+    final FormState form = formKey.currentState!;
     form.save();
     expect(value, equals('three'));
   });
@@ -586,13 +584,58 @@ void main() {
     expect(itemBoxes[1].size.width, equals(800.0 - 16.0 * 2));
   });
 
+  testWidgets('Dropdown menu can position correctly inside a nested navigator', (WidgetTester tester) async {
+    // Regression test for https://github.com/flutter/flutter/issues/66870
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          appBar: AppBar(),
+          body: Column(
+            children: <Widget>[
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500, maxHeight: 200),
+                child: Navigator(
+                  onGenerateRoute: (RouteSettings s) {
+                    return MaterialPageRoute<void>(builder: (BuildContext context) {
+                      return Center(
+                        child: DropdownButton<int>(
+                          value: 1,
+                          items: const <DropdownMenuItem<int>>[
+                            DropdownMenuItem<int>(
+                              child: Text('First Item'),
+                              value: 1,
+                            ),
+                            DropdownMenuItem<int>(
+                              child: Text('Second Item'),
+                              value: 2,
+                            ),
+                          ],
+                          onChanged: (_) { },
+                        ),
+                      );
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('First Item'));
+    await tester.pump();
+    final RenderBox secondItem = tester.renderObjectList<RenderBox>(find.text('Second Item')).toList()[1];
+    expect(secondItem.localToGlobal(Offset.zero).dx, equals(150.0));
+    expect(secondItem.localToGlobal(Offset.zero).dy, equals(176.0));
+  });
+
   testWidgets('Dropdown screen edges', (WidgetTester tester) async {
-    int value = 4;
+    int? value = 4;
     final List<DropdownMenuItem<int>> items = <DropdownMenuItem<int>>[
       for (int i = 0; i < 20; ++i) DropdownMenuItem<int>(value: i, child: Text('$i')),
     ];
 
-    void handleChanged(int newValue) {
+    void handleChanged(int? newValue) {
       value = newValue;
     }
 
@@ -626,7 +669,7 @@ void main() {
     expect(tester.elementList(find.text('19')), hasLength(1));
 
     expect(value, 4);
-    await tester.tap(find.byWidget(button));
+    await tester.tap(find.byWidget(button), warnIfMissed: false);
     expect(value, 4);
     // this waits for the route's completer to complete, which calls handleChanged
     await tester.idle();
@@ -746,7 +789,7 @@ void main() {
 
     // test for enabled color
     final RichText enabledRichText = tester.widget<RichText>(_iconRichText(iconKey));
-    expect(enabledRichText.text.style.color, Colors.grey.shade700);
+    expect(enabledRichText.text.style!.color, Colors.grey.shade700);
 
     // test for disabled color
     await tester.pumpWidget(buildFrame(
@@ -755,7 +798,7 @@ void main() {
     ));
 
     final RichText disabledRichText = tester.widget<RichText>(_iconRichText(iconKey));
-    expect(disabledRichText.text.style.color, Colors.grey.shade400);
+    expect(disabledRichText.text.style!.color, Colors.grey.shade400);
   });
 
   testWidgets('Dropdown button icon should have the passed in size and color instead of defaults', (WidgetTester tester) async {
@@ -776,7 +819,7 @@ void main() {
 
     // test for enabled color
     final RichText enabledRichText = tester.widget<RichText>(_iconRichText(iconKey));
-    expect(enabledRichText.text.style.color, Colors.pink);
+    expect(enabledRichText.text.style!.color, Colors.pink);
 
     // test for disabled color
     await tester.pumpWidget(buildFrame(
@@ -788,7 +831,7 @@ void main() {
     ));
 
     final RichText disabledRichText = tester.widget<RichText>(_iconRichText(iconKey));
-    expect(disabledRichText.text.style.color, Colors.orange);
+    expect(disabledRichText.text.style!.color, Colors.orange);
   });
 
   testWidgets('Dropdown button should use its own size and color properties over those defined by the theme', (WidgetTester tester) async {
@@ -815,7 +858,7 @@ void main() {
 
     // test for enabled color
     final RichText enabledRichText = tester.widget<RichText>(_iconRichText(iconKey));
-    expect(enabledRichText.text.style.color, Colors.yellow);
+    expect(enabledRichText.text.style!.color, Colors.yellow);
 
     // test for disabled color
     await tester.pumpWidget(buildFrame(
@@ -827,7 +870,7 @@ void main() {
     ));
 
     final RichText disabledRichText = tester.widget<RichText>(_iconRichText(iconKey));
-    expect(disabledRichText.text.style.color, Colors.yellow);
+    expect(disabledRichText.text.style!.color, Colors.yellow);
   });
 
   testWidgets('Dropdown button with isDense:true aligns selected menu item', (WidgetTester tester) async {
@@ -946,9 +989,45 @@ void main() {
     );
   });
 
+  testWidgets('Dropdown menu scrolls to last item in long lists', (WidgetTester tester) async {
+    final Key buttonKey = UniqueKey();
+    await tester.pumpWidget(buildFrame(
+      buttonKey: buttonKey,
+      value: '99',
+      items: List<String>.generate(/*length=*/ 100, (int index) => index.toString()),
+      onChanged: onChanged,
+    ));
+    await tester.tap(find.byKey(buttonKey));
+    await tester.pump();
+
+    final ScrollController scrollController = PrimaryScrollController.of(tester.element(find.byType(ListView)))!;
+    // Make sure there is no overscroll
+    expect(scrollController.offset, scrollController.position.maxScrollExtent);
+
+    // Find the selected item in the scrollable dropdown list
+    final Finder menuItemFinder = find.byType(Scrollable);
+    final RenderBox menuItemContainer = tester.renderObject<RenderBox>(menuItemFinder);
+    final RenderBox selectedItem = tester.renderObject<RenderBox>(
+      find.descendant(
+        of: menuItemFinder,
+        matching: find.byKey(const ValueKey<String>('99')),
+      ),
+    );
+
+    // kMaterialListPadding.vertical is 8.
+    const Offset menuPaddingOffset = Offset(0.0, -8.0);
+    final Offset selectedItemOffset = selectedItem.localToGlobal(Offset.zero);
+    final Offset menuItemContainerOffset = menuItemContainer.localToGlobal(menuPaddingOffset);
+    // Selected item should be aligned to the bottom of the dropdown menu.
+    expect(
+      selectedItem.size.bottomCenter(selectedItemOffset).dy,
+      menuItemContainer.size.bottomCenter(menuItemContainerOffset).dy,
+    );
+  });
+
   testWidgets('Size of DropdownButton with null value', (WidgetTester tester) async {
     final Key buttonKey = UniqueKey();
-    String value;
+    String? value;
 
     Widget build() => buildFrame(buttonKey: buttonKey, value: value, onChanged: onChanged);
 
@@ -970,7 +1049,7 @@ void main() {
   testWidgets('Size of DropdownButton with no items', (WidgetTester tester) async {
     // Regression test for https://github.com/flutter/flutter/issues/26419
     final Key buttonKey = UniqueKey();
-    List<String> items;
+    List<String>? items;
 
     Widget build() => buildFrame(buttonKey: buttonKey, items: items, onChanged: onChanged);
 
@@ -996,9 +1075,9 @@ void main() {
 
   testWidgets('Layout of a DropdownButton with null value', (WidgetTester tester) async {
     final Key buttonKey = UniqueKey();
-    String value;
+    String? value;
 
-    void onChanged(String newValue) {
+    void onChanged(String? newValue) {
       value = newValue;
     }
 
@@ -1014,7 +1093,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1)); // finish the menu animation
 
     // Tap on item 'one', which must appear over the button.
-    await tester.tap(find.byKey(buttonKey));
+    await tester.tap(find.byKey(buttonKey), warnIfMissed: false);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // finish the menu animation
 
@@ -1024,7 +1103,7 @@ void main() {
 
   testWidgets('Size of DropdownButton with null value and a hint', (WidgetTester tester) async {
     final Key buttonKey = UniqueKey();
-    String value;
+    String? value;
 
     // The hint will define the dropdown's width
     Widget build() => buildFrame(buttonKey: buttonKey, value: value, hint: const Text('onetwothree'));
@@ -1050,10 +1129,10 @@ void main() {
     // The dropdown menu isn't readily accessible. To find it we're assuming that it
     // contains a ListView and that it's an instance of _DropdownMenu.
     Rect getMenuRect() {
-      Rect menuRect;
+      late Rect menuRect;
       tester.element(find.byType(ListView)).visitAncestorElements((Element element) {
         if (element.toString().startsWith('_DropdownMenu')) {
-          final RenderBox box = element.findRenderObject() as RenderBox;
+          final RenderBox box = element.findRenderObject()! as RenderBox;
           assert(box != null);
           menuRect = box.localToGlobal(Offset.zero) & box.size;
           return false;
@@ -1075,8 +1154,8 @@ void main() {
       return buttonPadding.inflateRect(buttonRect);
     }
 
-    Rect buttonRect;
-    Rect menuRect;
+    late Rect buttonRect;
+    late Rect menuRect;
 
     Future<void> popUpAndDown(Widget frame) async {
       await tester.pumpWidget(frame);
@@ -1084,7 +1163,7 @@ void main() {
       await tester.pumpAndSettle();
       menuRect = getMenuRect();
       buttonRect = getExpandedButtonRect();
-      await tester.tap(find.byType(dropdownButtonType));
+      await tester.tap(find.byType(dropdownButtonType), warnIfMissed: false);
     }
 
     // Dropdown button is along the top of the app. The top of the menu is
@@ -1195,7 +1274,7 @@ void main() {
       buttonKey: key,
       value: null,
       items: menuItems,
-      onChanged: (String _) { },
+      onChanged: (String? _) { },
       hint: const Text('test'),
     ));
 
@@ -1242,49 +1321,53 @@ void main() {
         TestSemantics.rootChild(
           children: <TestSemantics>[
             TestSemantics(
-              flags: <SemanticsFlag>[
-                SemanticsFlag.scopesRoute,
-                SemanticsFlag.namesRoute,
-              ],
-              label: 'Popup menu',
               children: <TestSemantics>[
                 TestSemantics(
+                  flags: <SemanticsFlag>[
+                    SemanticsFlag.scopesRoute,
+                    SemanticsFlag.namesRoute,
+                  ],
+                  label: 'Popup menu',
                   children: <TestSemantics>[
                     TestSemantics(
-                      flags: <SemanticsFlag>[
-                        SemanticsFlag.hasImplicitScrolling,
-                      ],
                       children: <TestSemantics>[
                         TestSemantics(
-                          label: 'one',
-                          textDirection: TextDirection.ltr,
                           flags: <SemanticsFlag>[
-                            SemanticsFlag.isFocused,
-                            SemanticsFlag.isFocusable,
+                            SemanticsFlag.hasImplicitScrolling,
                           ],
-                          tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
-                          actions: <SemanticsAction>[SemanticsAction.tap],
-                        ),
-                        TestSemantics(
-                          label: 'two',
-                          textDirection: TextDirection.ltr,
-                          flags: <SemanticsFlag>[SemanticsFlag.isFocusable],
-                          tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
-                          actions: <SemanticsAction>[SemanticsAction.tap],
-                        ),
-                        TestSemantics(
-                          label: 'three',
-                          textDirection: TextDirection.ltr,
-                          flags: <SemanticsFlag>[SemanticsFlag.isFocusable],
-                          tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
-                          actions: <SemanticsAction>[SemanticsAction.tap],
-                        ),
-                        TestSemantics(
-                          label: 'four',
-                          textDirection: TextDirection.ltr,
-                          flags: <SemanticsFlag>[SemanticsFlag.isFocusable],
-                          tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
-                          actions: <SemanticsAction>[SemanticsAction.tap],
+                          children: <TestSemantics>[
+                            TestSemantics(
+                              label: 'one',
+                              textDirection: TextDirection.ltr,
+                              flags: <SemanticsFlag>[
+                                SemanticsFlag.isFocused,
+                                SemanticsFlag.isFocusable,
+                              ],
+                              tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
+                              actions: <SemanticsAction>[SemanticsAction.tap],
+                            ),
+                            TestSemantics(
+                              label: 'two',
+                              textDirection: TextDirection.ltr,
+                              flags: <SemanticsFlag>[SemanticsFlag.isFocusable],
+                              tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
+                              actions: <SemanticsAction>[SemanticsAction.tap],
+                            ),
+                            TestSemantics(
+                              label: 'three',
+                              textDirection: TextDirection.ltr,
+                              flags: <SemanticsFlag>[SemanticsFlag.isFocusable],
+                              tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
+                              actions: <SemanticsAction>[SemanticsAction.tap],
+                            ),
+                            TestSemantics(
+                              label: 'four',
+                              textDirection: TextDirection.ltr,
+                              flags: <SemanticsFlag>[SemanticsFlag.isFocusable],
+                              tags: <SemanticsTag>[const SemanticsTag('RenderViewport.twoPane')],
+                              actions: <SemanticsAction>[SemanticsAction.tap],
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1292,6 +1375,7 @@ void main() {
                 ),
               ],
             ),
+            TestSemantics(),
           ],
         ),
       ],
@@ -1302,7 +1386,7 @@ void main() {
   testWidgets('disabledHint displays on empty items or onChanged', (WidgetTester tester) async {
     final Key buttonKey = UniqueKey();
 
-    Widget build({ List<String> items, ValueChanged<String> onChanged }) => buildFrame(
+    Widget build({ List<String>? items, ValueChanged<String?>? onChanged }) => buildFrame(
       items: items,
       onChanged: onChanged,
       buttonKey: buttonKey,
@@ -1336,13 +1420,138 @@ void main() {
     expect(enabledHintBox.size, equals(disabledHintBox.size));
   });
 
+  // Regression test for https://github.com/flutter/flutter/issues/70177
+  testWidgets('disabledHint behavior test', (WidgetTester tester) async {
+    Widget build({ List<String>? items, ValueChanged<String?>? onChanged, String? value, Widget? hint, Widget? disabledHint }) => buildFrame(
+      items: items,
+      onChanged: onChanged,
+      value: value,
+      hint: hint,
+      disabledHint: disabledHint,
+    );
+
+    // The selected value should be displayed when the button is disabled.
+    await tester.pumpWidget(build(items: menuItems, onChanged: null, value: 'two'));
+    // The dropdown icon and the selected menu item are vertically aligned.
+    expect(tester.getCenter(find.text('two')).dy, tester.getCenter(find.byType(Icon)).dy);
+
+    // If [value] is null, the button is enabled, hint is displayed.
+    await tester.pumpWidget(build(
+      items: menuItems,
+      onChanged: onChanged,
+      value: null,
+      hint: const Text('hint'),
+      disabledHint: const Text('disabledHint'),
+    ));
+    expect(tester.getCenter(find.text('hint')).dy, tester.getCenter(find.byType(Icon)).dy);
+
+    // If [value] is null, the button is disabled, [disabledHint] is displayed when [disabledHint] is non-null.
+    await tester.pumpWidget(build(
+      items: menuItems,
+      onChanged: null,
+      value: null,
+      hint: const Text('hint'),
+      disabledHint: const Text('disabledHint'),
+    ));
+    expect(tester.getCenter(find.text('disabledHint')).dy, tester.getCenter(find.byType(Icon)).dy);
+
+    // If [value] is null, the button is disabled, [hint] is displayed when [disabledHint] is null.
+    await tester.pumpWidget(build(
+      items: menuItems,
+      onChanged: null,
+      value: null,
+      hint: const Text('hint'),
+      disabledHint: null,
+    ));
+    expect(tester.getCenter(find.text('hint')).dy, tester.getCenter(find.byType(Icon)).dy);
+
+    int? getIndex() {
+      final IndexedStack stack = tester.element(find.byType(IndexedStack)).widget as IndexedStack;
+      return stack.index;
+    }
+
+    // If [value], [hint] and [disabledHint] are null, the button is disabled, nothing displayed.
+    await tester.pumpWidget(build(
+      items: menuItems,
+      onChanged: null,
+      value: null,
+      hint: null,
+      disabledHint: null,
+    ));
+    expect(getIndex(), null);
+
+    // If [value], [hint] and [disabledHint] are null, the button is enabled, nothing displayed.
+    await tester.pumpWidget(build(
+      items: menuItems,
+      onChanged: onChanged,
+      value: null,
+      hint: null,
+      disabledHint: null,
+    ));
+    expect(getIndex(), null);
+  });
+
+  testWidgets('DropdownButton selected item color test', (WidgetTester tester) async {
+    Widget build({ ValueChanged<String?>? onChanged, String? value, Widget? hint, Widget? disabledHint }) {
+      return MaterialApp(
+        theme: ThemeData(
+          disabledColor: Colors.pink,
+        ),
+        home: Scaffold(
+          body: Center(
+            child: Column(children: <Widget>[
+              DropdownButtonFormField<String>(
+                style: const TextStyle(
+                  color: Colors.yellow
+                ),
+                disabledHint: disabledHint,
+                hint: hint,
+                items: const <DropdownMenuItem<String>>[
+                  DropdownMenuItem<String>(
+                    child: Text('one'),
+                    value: 'one',
+                  ),
+                  DropdownMenuItem<String>(
+                    child: Text('two'),
+                    value: 'two',
+                  ),
+                ],
+              value: value,
+              onChanged: onChanged,
+              )
+            ]),
+          ),
+        ),
+      );
+    }
+
+    Color textColor(String text) {
+      return tester.renderObject<RenderParagraph>(find.text(text)).text.style!.color!;
+    }
+
+    // The selected value should be displayed when the button is enabled.
+    await tester.pumpWidget(build(onChanged: onChanged, value: 'two'));
+    // The dropdown icon and the selected menu item are vertically aligned.
+    expect(tester.getCenter(find.text('two')).dy, tester.getCenter(find.byType(Icon)).dy);
+    // Selected item has a normal color from [DropdownButtonFormField.style]
+    // when the button is enabled.
+    expect(textColor('two'), Colors.yellow);
+
+    // The selected value should be displayed when the button is disabled.
+    await tester.pumpWidget(build(onChanged: null, value: 'two'));
+    expect(tester.getCenter(find.text('two')).dy, tester.getCenter(find.byType(Icon)).dy);
+    // Selected item has a disabled color from [theme.disabledColor]
+    // when the button is disable.
+    expect(textColor('two'), Colors.pink);
+  });
+
   testWidgets(
     'DropdowwnButton hint displays when the items list is empty, '
     'items is null, and disabledHint is null',
     (WidgetTester tester) async {
       final Key buttonKey = UniqueKey();
 
-      Widget build({ List<String> items }){
+      Widget build({ List<String>? items }){
         return buildFrame(
           items: items,
           buttonKey: buttonKey,
@@ -1364,7 +1573,7 @@ void main() {
   testWidgets('DropdownButton disabledHint is null by default', (WidgetTester tester) async {
     final Key buttonKey = UniqueKey();
 
-    Widget build({ List<String> items }){
+    Widget build({ List<String>? items }){
       return buildFrame(
         items: items,
         buttonKey: buttonKey,
@@ -1401,7 +1610,7 @@ void main() {
           );
         }).toList();
       },
-      onChanged: (String newValue) {},
+      onChanged: (String? newValue) {},
     ));
 
     final RenderBox dropdownButtonRenderBox = tester.renderObject<RenderBox>(
@@ -1438,7 +1647,7 @@ void main() {
             );
           }).toList();
         },
-        onChanged: (String newValue) {},
+        onChanged: (String? newValue) {},
       ));
 
       final RenderBox dropdownButtonRenderBox = tester.renderObject<RenderBox>(
@@ -1480,7 +1689,7 @@ void main() {
             );
           }).toList();
         },
-        onChanged: (String newValue) {},
+        onChanged: (String? newValue) {},
       ));
 
       final RenderBox dropdownButtonRenderBox = tester.renderObject<RenderBox>(
@@ -1652,14 +1861,13 @@ void main() {
 
     final DropdownButton<int> button = DropdownButton<int>(
       value: 50,
-      onChanged: (int newValue) { },
+      onChanged: (int? newValue) { },
       items: items,
     );
 
     double getMenuScroll() {
       double scrollPosition;
-      final ListView listView = tester.element(find.byType(ListView)).widget as ListView;
-      final ScrollController scrollController = listView.controller;
+      final ScrollController scrollController = PrimaryScrollController.of(tester.element(find.byType(ListView)))!;
       assert(scrollController != null);
       scrollPosition = scrollController.position.pixels;
       assert(scrollPosition != null);
@@ -1689,14 +1897,13 @@ void main() {
 
     final DropdownButton<int> button = DropdownButton<int>(
       value: 99,
-      onChanged: (int newValue) { },
+      onChanged: (int? newValue) { },
       items: items,
     );
 
     double getMenuScroll() {
       double scrollPosition;
-      final ListView listView = tester.element(find.byType(ListView)).widget as ListView;
-      final ScrollController scrollController = listView.controller;
+      final ScrollController scrollController = PrimaryScrollController.of(tester.element(find.byType(ListView)))!;
       assert(scrollController != null);
       scrollPosition = scrollController.position.pixels;
       assert(scrollPosition != null);
@@ -1726,14 +1933,13 @@ void main() {
 
     final DropdownButton<int> button = DropdownButton<int>(
       value: 0,
-      onChanged: (int newValue) { },
+      onChanged: (int? newValue) { },
       items: items,
     );
 
     double getMenuScroll() {
       double scrollPosition;
-      final ListView listView = tester.element(find.byType(ListView)).widget as ListView;
-      final ScrollController scrollController = listView.controller;
+      final ScrollController scrollController = PrimaryScrollController.of(tester.element(find.byType(ListView)))!;
       assert(scrollController != null);
       scrollPosition = scrollController.position.pixels;
       assert(scrollPosition != null);
@@ -1763,14 +1969,13 @@ void main() {
 
     final DropdownButton<int> button = DropdownButton<int>(
       value: 99,
-      onChanged: (int newValue) { },
+      onChanged: (int? newValue) { },
       items: items,
     );
 
     double getMenuScroll() {
       double scrollPosition;
-      final ListView listView = tester.element(find.byType(ListView)).widget as ListView;
-      final ScrollController scrollController = listView.controller;
+      final ScrollController scrollController = PrimaryScrollController.of(tester.element(find.byType(ListView)))!;
       assert(scrollController != null);
       scrollPosition = scrollController.position.pixels;
       assert(scrollPosition != null);
@@ -1795,8 +2000,7 @@ void main() {
 
   testWidgets('Dropdown menu respects parent size limits', (WidgetTester tester) async {
     // Regression test for https://github.com/flutter/flutter/issues/24417
-
-    int selectedIndex;
+    int? selectedIndex;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -1814,7 +2018,9 @@ void main() {
                       padding: const EdgeInsetsDirectional.only(start: 16.0, end: 24.0),
                       child: DropdownButton<int>(
                         value: 12,
-                        onChanged: (int i) { selectedIndex = i; },
+                        onChanged: (int? i) {
+                          selectedIndex = i;
+                        },
                         items: List<DropdownMenuItem<int>>.generate(100, (int i) {
                           return DropdownMenuItem<int>(value: i, child: Text('$i'));
                         }),
@@ -1868,7 +2074,7 @@ void main() {
       'Two',
       'Three',
     ];
-    String selectedItem = items[0];
+    String? selectedItem = items[0];
 
     await tester.pumpWidget(
       StatefulBuilder(
@@ -1877,7 +2083,9 @@ void main() {
             home: Scaffold(
               body: DropdownButton<String>(
                 value: selectedItem,
-                onChanged: (String string) => setState(() => selectedItem = string),
+                onChanged: (String? string) {
+                  setState(() => selectedItem = string);
+                },
                 selectedItemBuilder: (BuildContext context) {
                   int index = 0;
                   return items.map((String string) {
@@ -1921,7 +2129,7 @@ void main() {
   testWidgets('DropdownButton hint displays properly when selectedItemBuilder is defined', (WidgetTester tester) async {
     // Regression test for https://github.com/flutter/flutter/issues/42340
     final List<String> items = <String>['1', '2', '3'];
-    String selectedItem;
+    String? selectedItem;
 
     await tester.pumpWidget(
       StatefulBuilder(
@@ -1931,11 +2139,13 @@ void main() {
               body: DropdownButton<String>(
                 hint: const Text('Please select an item'),
                 value: selectedItem,
-                onChanged: (String string) => setState(() {
-                  selectedItem = string;
-                }),
+                onChanged: (String? string) {
+                  setState(() {
+                    selectedItem = string;
+                  });
+                },
                 selectedItemBuilder: (BuildContext context) {
-                  return items.map<Widget>((String item) {
+                  return items.map((String item) {
                     return Text('You have selected: $item');
                   }).toList();
                 },
@@ -1954,7 +2164,7 @@ void main() {
 
     // Initially shows the hint text
     expect(find.text('Please select an item'), findsOneWidget);
-    await tester.tap(find.text('Please select an item'));
+    await tester.tap(find.text('Please select an item'), warnIfMissed: false);
     await tester.pumpAndSettle();
     await tester.tap(find.text('1'));
     await tester.pumpAndSettle();
@@ -1964,7 +2174,7 @@ void main() {
 
   testWidgets('Variable size and oversized menu items', (WidgetTester tester) async {
     final List<double> itemHeights = <double>[30, 40, 50, 60];
-    double dropdownValue = itemHeights[0];
+    double? dropdownValue = itemHeights[0];
 
     Widget buildFrame() {
       return MaterialApp(
@@ -1973,7 +2183,7 @@ void main() {
             child: StatefulBuilder(
               builder: (BuildContext context, StateSetter setState) {
                 return DropdownButton<double>(
-                  onChanged: (double value) {
+                  onChanged: (double? value) {
                     setState(() { dropdownValue = value; });
                   },
                   value: dropdownValue,
@@ -2068,18 +2278,18 @@ void main() {
       'two',
       'three',
     ];
-    String item = items[0];
-    MediaQueryData mediaQuery;
+    String? item = items[0];
+    late MediaQueryData mediaQuery;
 
     await tester.pumpWidget(
       StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           return MaterialApp(
-            builder: (BuildContext context, Widget child) {
-              mediaQuery ??= MediaQuery.of(context);
+            builder: (BuildContext context, Widget? child) {
+              mediaQuery = MediaQuery.of(context);
               return MediaQuery(
                 data: mediaQuery,
-                child: child,
+                child: child!,
               );
             },
             home: Scaffold(
@@ -2089,7 +2299,7 @@ void main() {
                   value: item,
                   child: Text(item),
                 )).toList(),
-                onChanged: (String newItem) {
+                onChanged: (String? newItem) {
                   setState(() {
                     item = newItem;
                     mediaQuery = mediaQuery.copyWith(
@@ -2120,7 +2330,7 @@ void main() {
   testWidgets('DropdownButton hint is selected item', (WidgetTester tester) async {
     const double hintPaddingOffset = 8;
     const List<String> itemValues = <String>['item0', 'item1', 'item2', 'item3'];
-    String selectedItem = 'item0';
+    String? selectedItem = 'item0';
 
     Widget buildFrame() {
       return MaterialApp(
@@ -2143,8 +2353,8 @@ void main() {
                           // hard coded 16px margin in the dropdown code, so that
                           // this hint aligns "properly" with the menu.
                           return Stack(
+                            clipBehavior: Clip.none,
                             alignment: Alignment.topCenter,
-                            overflow: Overflow.visible,
                             children: <Widget>[
                               PositionedDirectional(
                                 width: constraints.maxWidth + hintPaddingOffset,
@@ -2156,12 +2366,13 @@ void main() {
                           );
                         },
                       ),
-                      onChanged: (String value) {
+                      onChanged: (String? value) {
                         setState(() { selectedItem = value; });
                       },
                       icon: Container(),
                       items: itemValues.map<DropdownMenuItem<String>>((String value) {
                         return DropdownMenuItem<String>(
+                          value: value,
                           child: Text(value),
                         );
                       }).toList(),
@@ -2179,7 +2390,7 @@ void main() {
     expect(tester.getTopLeft(find.text('-item0-')).dx, 8);
 
     // Show the popup menu.
-    await tester.tap(find.text('-item0-'));
+    await tester.tap(find.text('-item0-'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(tester.getTopLeft(find.text('-item0-')).dx, 8);
@@ -2222,9 +2433,9 @@ void main() {
     expect(find.byKey(buttonKey), isNot(paints ..rrect(rrect: const RRect.fromLTRBXY(0.0, 0.0, 104.0, 48.0, 4.0, 4.0), color: const Color(0xff00ff00))));
   });
 
-  testWidgets('DropdownButton is activated with the enter/space key', (WidgetTester tester) async {
+  testWidgets('DropdownButton is activated with the enter key', (WidgetTester tester) async {
     final FocusNode focusNode = FocusNode(debugLabel: 'DropdownButton');
-    String value = 'one';
+    String? value = 'one';
 
     Widget buildFrame() {
       return MaterialApp(
@@ -2235,7 +2446,7 @@ void main() {
                 return DropdownButton<String>(
                   focusNode: focusNode,
                   autofocus: true,
-                  onChanged: (String newValue) {
+                  onChanged: (String? newValue) {
                     setState(() {
                       value = newValue;
                     });
@@ -2261,15 +2472,69 @@ void main() {
     await tester.pump(); // Pump a frame for autofocus to take effect.
     expect(focusNode.hasPrimaryFocus, isTrue);
 
-    // Web doesn't respond to enter, only space.
-    await tester.sendKeyEvent(kIsWeb ? LogicalKeyboardKey.space : LogicalKeyboardKey.enter);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // finish the menu animation
     expect(value, equals('one'));
 
     await tester.sendKeyEvent(LogicalKeyboardKey.tab); // Focus 'two'
     await tester.pump();
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter); // Select 'two', should work on web too.
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter); // Select 'two'.
+    await tester.pump();
+
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1)); // finish the menu animation
+
+    expect(value, equals('two'));
+  });
+
+  testWidgets('DropdownButton is activated with the space key', (WidgetTester tester) async {
+    final FocusNode focusNode = FocusNode(debugLabel: 'DropdownButton');
+    String? value = 'one';
+
+    Widget buildFrame() {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return DropdownButton<String>(
+                  focusNode: focusNode,
+                  autofocus: true,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      value = newValue;
+                    });
+                  },
+                  value: value,
+                  itemHeight: null,
+                  items: menuItems.map<DropdownMenuItem<String>>((String item) {
+                    return DropdownMenuItem<String>(
+                      key: ValueKey<String>(item),
+                      value: item,
+                      child: Text(item, key: ValueKey<String>(item + 'Text')),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildFrame());
+    await tester.pump(); // Pump a frame for autofocus to take effect.
+    expect(focusNode.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1)); // finish the menu animation
+    expect(value, equals('one'));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab); // Focus 'two'
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space); // Select 'two'.
     await tester.pump();
 
     await tester.pump();
@@ -2280,7 +2545,7 @@ void main() {
 
   testWidgets('Selected element is focused when dropdown is opened', (WidgetTester tester) async {
     final FocusNode focusNode = FocusNode(debugLabel: 'DropdownButton');
-    String value = 'one';
+    String? value = 'one';
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: Center(
@@ -2289,7 +2554,7 @@ void main() {
               return DropdownButton<String>(
                 focusNode: focusNode,
                 autofocus: true,
-                onChanged: (String newValue) {
+                onChanged: (String? newValue) {
                   setState(() {
                     value = newValue;
                   });
@@ -2336,11 +2601,11 @@ void main() {
     final Element element = tester.element(find.byKey(const ValueKey<String>('two')).last);
     final FocusNode node = Focus.of(element);
     expect(node.hasFocus, isTrue);
-  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/55320
+  });
 
   testWidgets('Selected element is correctly focused with dropdown that more items than fit on the screen', (WidgetTester tester) async {
     final FocusNode focusNode = FocusNode(debugLabel: 'DropdownButton');
-    int value = 1;
+    int? value = 1;
     final List<int> hugeMenuItems = List<int>.generate(50, (int index) => index);
 
     await tester.pumpWidget(
@@ -2352,7 +2617,7 @@ void main() {
                 return DropdownButton<int>(
                   focusNode: focusNode,
                   autofocus: true,
-                  onChanged: (int newValue) {
+                  onChanged: (int? newValue) {
                     setState(() {
                       value = newValue;
                     });
@@ -2399,11 +2664,11 @@ void main() {
     final Element element = tester.element(find.byKey(const ValueKey<int>(42)).last);
     final FocusNode node = Focus.of(element);
     expect(node.hasFocus, isTrue);
-  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/55320
+  });
 
   testWidgets("Having a focused element doesn't interrupt scroll when flung by touch", (WidgetTester tester) async {
     final FocusNode focusNode = FocusNode(debugLabel: 'DropdownButton');
-    int value = 1;
+    int? value = 1;
     final List<int> hugeMenuItems = List<int>.generate(100, (int index) => index);
 
     await tester.pumpWidget(
@@ -2415,7 +2680,7 @@ void main() {
                 return DropdownButton<int>(
                   focusNode: focusNode,
                   autofocus: true,
-                  onChanged: (int newValue) {
+                  onChanged: (int? newValue) {
                     setState(() {
                       value = newValue;
                     });
@@ -2473,13 +2738,72 @@ void main() {
     // Scrolling to the top again has removed the one the focus was on from the
     // tree, causing it to lose focus.
     expect(Focus.of(tester.element(find.byKey(const ValueKey<int>(91)).last)).hasPrimaryFocus, isFalse);
-  }, skip: isBrowser); // https://github.com/flutter/flutter/issues/55320
+  });
+
+  testWidgets('DropdownButton changes selected item with arrow keys', (WidgetTester tester) async {
+    final FocusNode focusNode = FocusNode(debugLabel: 'DropdownButton');
+    String? value = 'one';
+
+    Widget buildFrame() {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return DropdownButton<String>(
+                  focusNode: focusNode,
+                  autofocus: true,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      value = newValue;
+                    });
+                  },
+                  value: value,
+                  itemHeight: null,
+                  items: menuItems.map<DropdownMenuItem<String>>((String item) {
+                    return DropdownMenuItem<String>(
+                      key: ValueKey<String>(item),
+                      value: item,
+                      child: Text(item, key: ValueKey<String>(item + 'Text')),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildFrame());
+    await tester.pump(); // Pump a frame for autofocus to take effect.
+    expect(focusNode.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1)); // finish the menu animation
+    expect(value, equals('one'));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown); // Focus 'two'.
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown); // Focus 'three'.
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp); // Back to 'two'.
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter); // Select 'two'.
+    await tester.pump();
+
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1)); // finish the menu animation
+
+    expect(value, equals('two'));
+  });
 
   testWidgets('DropdownButton onTap callback is called when defined', (WidgetTester tester) async {
     int dropdownButtonTapCounter = 0;
-    String value = 'one';
+    String? value = 'one';
 
-    void onChanged(String newValue) { value = newValue; }
+    void onChanged(String? newValue) { value = newValue; }
     void onTap() { dropdownButtonTapCounter += 1; }
 
     Widget build() => buildFrame(
@@ -2506,7 +2830,7 @@ void main() {
     expect(dropdownButtonTapCounter, 1); // Should not change.
 
     // Tap dropdown button again.
-    await tester.tap(find.text('three'));
+    await tester.tap(find.text('three'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(value, equals('three'));
@@ -2521,9 +2845,9 @@ void main() {
   });
 
   testWidgets('DropdownMenuItem onTap callback is called when defined', (WidgetTester tester) async {
-    String value = 'one';
+    String? value = 'one';
     final List<int> menuItemTapCounters = <int>[0, 0, 0, 0];
-    void onChanged(String newValue) { value = newValue; }
+    void onChanged(String? newValue) { value = newValue; }
 
     final List<VoidCallback> onTapCallbacks = <VoidCallback>[
       () { menuItemTapCounters[0] += 1; },
@@ -2572,7 +2896,7 @@ void main() {
     expect(menuItemTapCounters, <int>[0, 0, 1, 0]);
 
     // Tap dropdown button again.
-    await tester.tap(find.text('three'));
+    await tester.tap(find.text('three'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     // Should not change.
@@ -2588,7 +2912,7 @@ void main() {
     expect(menuItemTapCounters, <int>[0, 1, 1, 0]);
 
     // Tap dropdown button again.
-    await tester.tap(find.text('two'));
+    await tester.tap(find.text('two'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     // Should not change.
@@ -2603,5 +2927,85 @@ void main() {
     // though it was already selected.
     expect(value, equals('two'));
     expect(menuItemTapCounters, <int>[0, 2, 1, 0]);
+  });
+
+  testWidgets('does not crash when option is selected without waiting for opening animation to complete', (WidgetTester tester) async {
+    // Regression test for b/171846624.
+
+    final List<String> options = <String>['first', 'second', 'third'];
+    String? value = options.first;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) => DropdownButton<String>(
+              value: value,
+              items: options.map((String s) => DropdownMenuItem<String>(
+                value: s,
+                child: Text(s),
+              )).toList(),
+              onChanged: (String? v) {
+                setState(() {
+                  value = v;
+                });
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('first').hitTestable(), findsOneWidget);
+    expect(find.text('second').hitTestable(), findsNothing);
+    expect(find.text('third').hitTestable(), findsNothing);
+
+    // Open dropdown.
+    await tester.tap(find.text('first').hitTestable());
+    await tester.pump();
+
+    expect(find.text('third').hitTestable(), findsOneWidget);
+    expect(find.text('first').hitTestable(), findsOneWidget);
+    expect(find.text('second').hitTestable(), findsOneWidget);
+
+    // Deliberately not waiting for opening animation to complete!
+
+    // Select an option in dropdown.
+    await tester.tap(find.text('third').hitTestable());
+    await tester.pump();
+    expect(find.text('third').hitTestable(), findsOneWidget);
+    expect(find.text('first').hitTestable(), findsNothing);
+    expect(find.text('second').hitTestable(), findsNothing);
+  });
+
+  testWidgets('Dropdown menu should persistently show a scrollbar if it is scrollable', (WidgetTester tester) async {
+    await tester.pumpWidget(buildFrame(
+      value: '0',
+      // menu is short enough to fit onto the screen.
+      items: List<String>.generate(/*length=*/10, (int index) => index.toString()),
+      onChanged: onChanged,
+    ));
+    await tester.tap(find.text('0'));
+    await tester.pumpAndSettle();
+
+    ScrollController scrollController = PrimaryScrollController.of(tester.element(find.byType(ListView)))!;
+    // The scrollbar shouldn't show if the list fits into the screen.
+    expect(scrollController.position.maxScrollExtent, 0);
+    expect(find.byType(Scrollbar), isNot(paints..rect()));
+
+    await tester.tap(find.text('0').last);
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(buildFrame(
+      value: '0',
+      // menu is too long to fit onto the screen.
+      items: List<String>.generate(/*length=*/100, (int index) => index.toString()),
+      onChanged: onChanged,
+    ));
+    await tester.tap(find.text('0'));
+    await tester.pumpAndSettle();
+
+    scrollController = PrimaryScrollController.of(tester.element(find.byType(ListView)))!;
+    // The scrollbar is shown when the list is longer than the height of the screen.
+    expect(scrollController.position.maxScrollExtent > 0, isTrue);
+    expect(find.byType(Scrollbar), paints..rect());
   });
 }

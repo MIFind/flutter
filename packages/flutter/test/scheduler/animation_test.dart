@@ -20,7 +20,7 @@ void main() {
   });
 
   test('Can cancel queued callback', () {
-    int secondId;
+    late int secondId;
 
     bool firstCallbackRan = false;
     bool secondCallbackRan = false;

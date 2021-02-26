@@ -19,6 +19,7 @@
   "copyButtonLabel": "Kopiera",
   "pasteButtonLabel": "Klistra in",
   "selectAllButtonLabel": "Markera alla",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Stäng"
+  "tabSemanticsLabel": "Flik $tabIndex av $tabCount",
+  "modalBarrierDismissLabel": "Stäng",
+  "searchTextFieldPlaceholderLabel": "Sök"
 }

@@ -39,7 +39,7 @@ enum ScriptCategory {
   tall,
 }
 
-/// The color and geometry [TextThemes] for Material apps.
+/// The color and geometry [TextTheme]s for Material apps.
 ///
 /// The text themes provided by the overall [Theme], like
 /// [ThemeData.textTheme], are based on the current locale's
@@ -54,7 +54,7 @@ enum ScriptCategory {
 /// `Theme.of(context).accentTextTheme`.
 ///
 /// The color text themes are [blackMountainView], [whiteMountainView],
-/// [blackCupertino], and [whiteCupertino]. The Mountain View theme [TextStyles]
+/// [blackCupertino], and [whiteCupertino]. The Mountain View theme [TextStyle]s
 /// are based on the Roboto fonts as used on Android. The Cupertino themes are
 /// based on the [San Francisco
 /// font](https://developer.apple.com/ios/human-interface-guidelines/visual-design/typography/)
@@ -96,12 +96,12 @@ class Typography with Diagnosticable {
     'This feature was deprecated after v1.13.8.'
   )
   factory Typography({
-    TargetPlatform platform,
-    TextTheme black,
-    TextTheme white,
-    TextTheme englishLike,
-    TextTheme dense,
-    TextTheme tall,
+    TargetPlatform? platform,
+    TextTheme? black,
+    TextTheme? white,
+    TextTheme? englishLike,
+    TextTheme? dense,
+    TextTheme? tall,
   }) = Typography.material2014;
 
   /// Creates a typography instance using material design's 2014 defaults.
@@ -109,18 +109,18 @@ class Typography with Diagnosticable {
   /// If [platform] is [TargetPlatform.iOS] or [TargetPlatform.macOS], the
   /// default values for [black] and [white] are [blackCupertino] and
   /// [whiteCupertino] respectively. Otherwise they are [blackMountainView] and
-  /// [whiteMoutainView]. If [platform] is null then both [black] and [white]
+  /// [whiteMountainView]. If [platform] is null then both [black] and [white]
   /// must be specified.
   ///
   /// The default values for [englishLike], [dense], and [tall] are
   /// [englishLike2014], [dense2014], and [tall2014].
   factory Typography.material2014({
-    TargetPlatform platform = TargetPlatform.android,
-    TextTheme black,
-    TextTheme white,
-    TextTheme englishLike,
-    TextTheme dense,
-    TextTheme tall,
+    TargetPlatform? platform = TargetPlatform.android,
+    TextTheme? black,
+    TextTheme? white,
+    TextTheme? englishLike,
+    TextTheme? dense,
+    TextTheme? tall,
   }) {
     assert(platform != null || (black != null && white != null));
     return Typography._withPlatform(
@@ -137,18 +137,18 @@ class Typography with Diagnosticable {
   /// If [platform] is [TargetPlatform.iOS] or [TargetPlatform.macOS], the
   /// default values for [black] and [white] are [blackCupertino] and
   /// [whiteCupertino] respectively. Otherwise they are [blackMountainView] and
-  /// [whiteMoutainView]. If [platform] is null then both [black] and [white]
+  /// [whiteMountainView]. If [platform] is null then both [black] and [white]
   /// must be specified.
   ///
   /// The default values for [englishLike], [dense], and [tall] are
   /// [englishLike2018], [dense2018], and [tall2018].
   factory Typography.material2018({
-    TargetPlatform platform = TargetPlatform.android,
-    TextTheme black,
-    TextTheme white,
-    TextTheme englishLike,
-    TextTheme dense,
-    TextTheme tall,
+    TargetPlatform? platform = TargetPlatform.android,
+    TextTheme? black,
+    TextTheme? white,
+    TextTheme? englishLike,
+    TextTheme? dense,
+    TextTheme? tall,
   }) {
     assert(platform != null || (black != null && white != null));
     return Typography._withPlatform(
@@ -161,9 +161,9 @@ class Typography with Diagnosticable {
   }
 
   factory Typography._withPlatform(
-    TargetPlatform platform,
-    TextTheme black,
-    TextTheme white,
+    TargetPlatform? platform,
+    TextTheme? black,
+    TextTheme? white,
     TextTheme englishLike,
     TextTheme dense,
     TextTheme tall,
@@ -174,7 +174,6 @@ class Typography with Diagnosticable {
     assert(tall != null);
     switch (platform) {
       case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
         black ??= blackCupertino;
         white ??= whiteCupertino;
         break;
@@ -187,12 +186,18 @@ class Typography with Diagnosticable {
         black ??= blackRedmond;
         white ??= whiteRedmond;
         break;
+      case TargetPlatform.macOS:
+        black ??= blackRedwoodCity;
+        white ??= whiteRedwoodCity;
+        break;
       case TargetPlatform.linux:
         black ??= blackHelsinki;
         white ??= whiteHelsinki;
         break;
+      case null:
+        break;
     }
-    return Typography._(black, white, englishLike, dense, tall);
+    return Typography._(black!, white!, englishLike, dense, tall);
   }
 
   const Typography._(this.black, this.white, this.englishLike, this.dense, this.tall)
@@ -267,17 +272,16 @@ class Typography with Diagnosticable {
       case ScriptCategory.tall:
         return tall;
     }
-    return null;
   }
 
   /// Creates a copy of this [Typography] with the given fields
   /// replaced by the non-null parameter values.
   Typography copyWith({
-    TextTheme black,
-    TextTheme white,
-    TextTheme englishLike,
-    TextTheme dense,
-    TextTheme tall,
+    TextTheme? black,
+    TextTheme? white,
+    TextTheme? englishLike,
+    TextTheme? dense,
+    TextTheme? tall,
   }) {
     return Typography._(
       black ?? this.black,
@@ -457,6 +461,8 @@ class Typography with Diagnosticable {
   /// A material design text theme with dark glyphs based on San Francisco.
   ///
   /// This [TextTheme] provides color but not geometry (font size, weight, etc).
+  ///
+  /// This theme uses the iOS version of the font names.
   static const TextTheme blackCupertino = TextTheme(
     headline1 : TextStyle(debugLabel: 'blackCupertino headline1', fontFamily: '.SF UI Display', inherit: true, color: Colors.black54, decoration: TextDecoration.none),
     headline2 : TextStyle(debugLabel: 'blackCupertino headline2', fontFamily: '.SF UI Display', inherit: true, color: Colors.black54, decoration: TextDecoration.none),
@@ -476,6 +482,8 @@ class Typography with Diagnosticable {
   /// A material design text theme with light glyphs based on San Francisco.
   ///
   /// This [TextTheme] provides color but not geometry (font size, weight, etc).
+  ///
+  /// This theme uses the iOS version of the font names.
   static const TextTheme whiteCupertino = TextTheme(
     headline1 : TextStyle(debugLabel: 'whiteCupertino headline1', fontFamily: '.SF UI Display', inherit: true, color: Colors.white70, decoration: TextDecoration.none),
     headline2 : TextStyle(debugLabel: 'whiteCupertino headline2', fontFamily: '.SF UI Display', inherit: true, color: Colors.white70, decoration: TextDecoration.none),
@@ -490,6 +498,48 @@ class Typography with Diagnosticable {
     button    : TextStyle(debugLabel: 'whiteCupertino button',    fontFamily: '.SF UI Text',    inherit: true, color: Colors.white,   decoration: TextDecoration.none),
     subtitle2 : TextStyle(debugLabel: 'whiteCupertino subtitle2', fontFamily: '.SF UI Text',    inherit: true, color: Colors.white,   decoration: TextDecoration.none),
     overline  : TextStyle(debugLabel: 'whiteCupertino overline',  fontFamily: '.SF UI Text',    inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+  );
+
+  /// A material design text theme with dark glyphs based on San Francisco.
+  ///
+  /// This [TextTheme] provides color but not geometry (font size, weight, etc).
+  ///
+  /// This theme uses the macOS version of the font names.
+  static const TextTheme blackRedwoodCity = TextTheme(
+    headline1 : TextStyle(debugLabel: 'blackRedwoodCity headline1', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black54, decoration: TextDecoration.none),
+    headline2 : TextStyle(debugLabel: 'blackRedwoodCity headline2', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black54, decoration: TextDecoration.none),
+    headline3 : TextStyle(debugLabel: 'blackRedwoodCity headline3', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black54, decoration: TextDecoration.none),
+    headline4 : TextStyle(debugLabel: 'blackRedwoodCity headline4', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black54, decoration: TextDecoration.none),
+    headline5 : TextStyle(debugLabel: 'blackRedwoodCity headline5', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black87, decoration: TextDecoration.none),
+    headline6 : TextStyle(debugLabel: 'blackRedwoodCity headline6', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black87, decoration: TextDecoration.none),
+    bodyText1 : TextStyle(debugLabel: 'blackRedwoodCity bodyText1', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black87, decoration: TextDecoration.none),
+    bodyText2 : TextStyle(debugLabel: 'blackRedwoodCity bodyText2', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black87, decoration: TextDecoration.none),
+    subtitle1 : TextStyle(debugLabel: 'blackRedwoodCity subtitle1', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black87, decoration: TextDecoration.none),
+    subtitle2 : TextStyle(debugLabel: 'blackRedwoodCity subtitle2', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black,   decoration: TextDecoration.none),
+    caption   : TextStyle(debugLabel: 'blackRedwoodCity caption',   fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black54, decoration: TextDecoration.none),
+    button    : TextStyle(debugLabel: 'blackRedwoodCity button',    fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black87, decoration: TextDecoration.none),
+    overline  : TextStyle(debugLabel: 'blackRedwoodCity overline',  fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.black,   decoration: TextDecoration.none),
+  );
+
+  /// A material design text theme with light glyphs based on San Francisco.
+  ///
+  /// This [TextTheme] provides color but not geometry (font size, weight, etc).
+  ///
+  /// This theme uses the macOS version of the font names.
+  static const TextTheme whiteRedwoodCity = TextTheme(
+    headline1 : TextStyle(debugLabel: 'whiteRedwoodCity headline1', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white70, decoration: TextDecoration.none),
+    headline2 : TextStyle(debugLabel: 'whiteRedwoodCity headline2', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white70, decoration: TextDecoration.none),
+    headline3 : TextStyle(debugLabel: 'whiteRedwoodCity headline3', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white70, decoration: TextDecoration.none),
+    headline4 : TextStyle(debugLabel: 'whiteRedwoodCity headline4', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white70, decoration: TextDecoration.none),
+    headline5 : TextStyle(debugLabel: 'whiteRedwoodCity headline5', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+    headline6 : TextStyle(debugLabel: 'whiteRedwoodCity headline6', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+    subtitle1 : TextStyle(debugLabel: 'whiteRedwoodCity subtitle1', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+    bodyText1 : TextStyle(debugLabel: 'whiteRedwoodCity bodyText1', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+    bodyText2 : TextStyle(debugLabel: 'whiteRedwoodCity bodyText2', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+    caption   : TextStyle(debugLabel: 'whiteRedwoodCity caption',   fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white70, decoration: TextDecoration.none),
+    button    : TextStyle(debugLabel: 'whiteRedwoodCity button',    fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+    subtitle2 : TextStyle(debugLabel: 'whiteRedwoodCity subtitle2', fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
+    overline  : TextStyle(debugLabel: 'whiteRedwoodCity overline',  fontFamily: '.AppleSystemUIFont', inherit: true, color: Colors.white,   decoration: TextDecoration.none),
   );
 
   /// Defines text geometry for [ScriptCategory.englishLike] scripts, such as
@@ -526,7 +576,7 @@ class Typography with Diagnosticable {
     bodyText2 : TextStyle(debugLabel: 'englishLike bodyText2 2018', fontSize: 14.0, fontWeight: FontWeight.w400, textBaseline: TextBaseline.alphabetic, letterSpacing: 0.25),
     subtitle1 : TextStyle(debugLabel: 'englishLike subtitle1 2018', fontSize: 16.0, fontWeight: FontWeight.w400, textBaseline: TextBaseline.alphabetic, letterSpacing: 0.15),
     subtitle2 : TextStyle(debugLabel: 'englishLike subtitle2 2018', fontSize: 14.0, fontWeight: FontWeight.w500, textBaseline: TextBaseline.alphabetic, letterSpacing: 0.1),
-    button    : TextStyle(debugLabel: 'englishLike button 2018',    fontSize: 14.0, fontWeight: FontWeight.w500, textBaseline: TextBaseline.alphabetic, letterSpacing: 0.75),
+    button    : TextStyle(debugLabel: 'englishLike button 2018',    fontSize: 14.0, fontWeight: FontWeight.w500, textBaseline: TextBaseline.alphabetic, letterSpacing: 1.25),
     caption   : TextStyle(debugLabel: 'englishLike caption 2018',   fontSize: 12.0, fontWeight: FontWeight.w400, textBaseline: TextBaseline.alphabetic, letterSpacing: 0.4),
     overline  : TextStyle(debugLabel: 'englishLike overline 2018',  fontSize: 10.0, fontWeight: FontWeight.w400, textBaseline: TextBaseline.alphabetic, letterSpacing: 1.5),
   );

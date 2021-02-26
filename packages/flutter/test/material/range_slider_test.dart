@@ -4,10 +4,10 @@
 
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/src/physics/utils.dart' show nearEqual;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../rendering/mock_canvas.dart';
@@ -59,15 +59,15 @@ void main() {
     // The start thumb is selected when tapping the left inactive track.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.1;
     await tester.tapAt(leftTarget);
-    expect(values.start, closeTo(0.1, 0.01));
+    expect(values.start, moreOrLessEquals(0.1, epsilon: 0.01));
     expect(values.end, equals(0.7));
 
     // The end thumb is selected when tapping the right inactive track.
     await tester.pump();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.9;
     await tester.tapAt(rightTarget);
-    expect(values.start, closeTo(0.1, 0.01));
-    expect(values.end, closeTo(0.9, 0.01));
+    expect(values.start, moreOrLessEquals(0.1, epsilon: 0.01));
+    expect(values.end, moreOrLessEquals(0.9, epsilon: 0.01));
   });
 
   testWidgets('Range Slider can move when tapped (continuous RTL)', (WidgetTester tester) async {
@@ -117,14 +117,14 @@ void main() {
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.1;
     await tester.tapAt(leftTarget);
     expect(values.start, 0.3);
-    expect(values.end, closeTo(0.9, 0.01));
+    expect(values.end, moreOrLessEquals(0.9, epsilon: 0.01));
 
     // The start thumb is selected when tapping the right inactive track.
     await tester.pump();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.9;
     await tester.tapAt(rightTarget);
-    expect(values.start, closeTo(0.1, 0.01));
-    expect(values.end, closeTo(0.9, 0.01));
+    expect(values.start, moreOrLessEquals(0.1, epsilon: 0.01));
+    expect(values.end, moreOrLessEquals(0.9, epsilon: 0.01));
   });
 
   testWidgets('Range Slider can move when tapped (discrete LTR)', (WidgetTester tester) async {
@@ -251,7 +251,7 @@ void main() {
     expect(values.end.round(), equals(90));
   });
 
-  testWidgets('Range Slider thumbs can be dragged to the min and max (continous LTR)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged to the min and max (continuous LTR)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
@@ -298,7 +298,7 @@ void main() {
     expect(values.end, equals(1));
   });
 
-  testWidgets('Range Slider thumbs can be dragged to the min and max (continous RTL)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged to the min and max (continuous RTL)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
@@ -445,7 +445,7 @@ void main() {
     expect(values.start, equals(0));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continous LTR)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continuous LTR)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
@@ -484,21 +484,21 @@ void main() {
     // Drag the start thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.start, closeTo(0.5, 0.05));
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the end thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.end, closeTo(0.5, 0.05));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the start thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, -(bottomRight - topLeft) * 0.3);
-    expect(values.start, closeTo(0.2, 0.05));
+    expect(values.start, moreOrLessEquals(0.2, epsilon: 0.05));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continous RTL)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (continuous RTL)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
@@ -537,18 +537,18 @@ void main() {
     // Drag the end thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.end, closeTo(0.5, 0.05));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the start thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.start, closeTo(0.5, 0.05));
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the start thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, (bottomRight - topLeft) * 0.3);
-    expect(values.start, closeTo(0.2, 0.05));
+    expect(values.start, moreOrLessEquals(0.2, epsilon: 0.05));
   });
 
   testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (discrete LTR)', (WidgetTester tester) async {
@@ -593,18 +593,18 @@ void main() {
     // Drag the start thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.start, closeTo(50, 0.01));
+    expect(values.start, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the end thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.end, closeTo(50, 0.01));
+    expect(values.end, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the start thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, -(bottomRight - topLeft) * 0.3);
-    expect(values.start, closeTo(20, 0.01));
+    expect(values.start, moreOrLessEquals(20, epsilon: 0.01));
   });
 
   testWidgets('Range Slider thumbs can be dragged together and the start thumb can be dragged apart (discrete RTL)', (WidgetTester tester) async {
@@ -649,21 +649,21 @@ void main() {
     // Drag the end thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.end, closeTo(50, 0.01));
+    expect(values.end, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the start thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.start, closeTo(50, 0.01));
+    expect(values.start, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the start thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, (bottomRight - topLeft) * 0.3);
-    expect(values.start, closeTo(20, 0.01));
+    expect(values.start, moreOrLessEquals(20, epsilon: 0.01));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continous LTR)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continuous LTR)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
@@ -702,21 +702,21 @@ void main() {
     // Drag the start thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.start, closeTo(0.5, 0.05));
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the end thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.end, closeTo(0.5, 0.05));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the end thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, (bottomRight - topLeft) * 0.3);
-    expect(values.end, closeTo(0.8, 0.05));
+    expect(values.end, moreOrLessEquals(0.8, epsilon: 0.05));
   });
 
-  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continous RTL)', (WidgetTester tester) async {
+  testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (continuous RTL)', (WidgetTester tester) async {
     RangeValues values = const RangeValues(0.3, 0.7);
 
     await tester.pumpWidget(
@@ -755,18 +755,18 @@ void main() {
     // Drag the end thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.end, closeTo(0.5, 0.05));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the start thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.start, closeTo(0.5, 0.05));
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.05));
 
     // Drag the end thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, -(bottomRight - topLeft) * 0.3);
-    expect(values.end, closeTo(0.8, 0.05));
+    expect(values.end, moreOrLessEquals(0.8, epsilon: 0.05));
   });
 
   testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (discrete LTR)', (WidgetTester tester) async {
@@ -811,18 +811,18 @@ void main() {
     // Drag the start thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.start, closeTo(50, 0.01));
+    expect(values.start, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the end thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.end, closeTo(50, 0.01));
+    expect(values.end, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the end thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, (bottomRight - topLeft) * 0.3);
-    expect(values.end, closeTo(80, 0.01));
+    expect(values.end, moreOrLessEquals(80, epsilon: 0.01));
   });
 
   testWidgets('Range Slider thumbs can be dragged together and the end thumb can be dragged apart (discrete RTL)', (WidgetTester tester) async {
@@ -867,24 +867,24 @@ void main() {
     // Drag the end thumb towards the center.
     final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
     await tester.dragFrom(leftTarget, middle - leftTarget);
-    expect(values.end, closeTo(50, 0.01));
+    expect(values.end, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the start thumb towards the center.
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.start, closeTo(50, 0.01));
+    expect(values.start, moreOrLessEquals(50, epsilon: 0.01));
 
     // Drag the end thumb apart.
     await tester.pumpAndSettle();
     await tester.dragFrom(middle, -(bottomRight - topLeft) * 0.3);
-    expect(values.end, closeTo(80, 0.01));
+    expect(values.end, moreOrLessEquals(80, epsilon: 0.01));
   });
 
   testWidgets('Range Slider onChangeEnd and onChangeStart are called on an interaction initiated by tap', (WidgetTester tester) async {
     RangeValues values = const RangeValues(30, 70);
-    RangeValues startValues;
-    RangeValues endValues;
+    RangeValues? startValues;
+    RangeValues? endValues;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -931,18 +931,18 @@ void main() {
     expect(startValues, null);
     expect(endValues, null);
     await tester.dragFrom(leftTarget, (bottomRight - topLeft) * 0.2);
-    expect(startValues.start, closeTo(30, 1));
-    expect(startValues.end, closeTo(70, 1));
-    expect(values.start, closeTo(50, 1));
-    expect(values.end, closeTo(70, 1));
-    expect(endValues.start, closeTo(50, 1));
-    expect(endValues.end, closeTo(70, 1));
+    expect(startValues!.start, moreOrLessEquals(30, epsilon: 1));
+    expect(startValues!.end, moreOrLessEquals(70, epsilon: 1));
+    expect(values.start, moreOrLessEquals(50, epsilon: 1));
+    expect(values.end, moreOrLessEquals(70, epsilon: 1));
+    expect(endValues!.start, moreOrLessEquals(50, epsilon: 1));
+    expect(endValues!.end, moreOrLessEquals(70, epsilon: 1));
   });
 
   testWidgets('Range Slider onChangeEnd and onChangeStart are called on an interaction initiated by drag', (WidgetTester tester) async {
     RangeValues values = const RangeValues(30, 70);
-    RangeValues startValues;
-    RangeValues endValues;
+    late RangeValues startValues;
+    late RangeValues endValues;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -991,17 +991,17 @@ void main() {
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, (bottomRight - topLeft) * -0.2);
     await tester.pumpAndSettle();
-    expect(values.start, closeTo(50, 1));
-    expect(values.end, closeTo(51, 1));
+    expect(values.start, moreOrLessEquals(50, epsilon: 1));
+    expect(values.end, moreOrLessEquals(51, epsilon: 1));
 
     // Drag the end thumb to the right.
     final Offset middleTarget = topLeft + (bottomRight - topLeft) * 0.5;
     await tester.dragFrom(middleTarget, (bottomRight - topLeft) * 0.4);
     await tester.pumpAndSettle();
-    expect(startValues.start, closeTo(50, 1));
-    expect(startValues.end, closeTo(51, 1));
-    expect(endValues.start, closeTo(50, 1));
-    expect(endValues.end, closeTo(90, 1));
+    expect(startValues.start, moreOrLessEquals(50, epsilon: 1));
+    expect(startValues.end, moreOrLessEquals(51, epsilon: 1));
+    expect(endValues.start, moreOrLessEquals(50, epsilon: 1));
+    expect(endValues.end, moreOrLessEquals(90, epsilon: 1));
   });
 
   ThemeData _buildTheme() {
@@ -1026,14 +1026,14 @@ void main() {
   }
 
   Widget _buildThemedApp({
-    ThemeData theme,
-    Color activeColor,
-    Color inactiveColor,
-    int divisions,
+    required ThemeData theme,
+    Color? activeColor,
+    Color? inactiveColor,
+    int? divisions,
     bool enabled = true,
   }) {
     RangeValues values = const RangeValues(0.5, 0.75);
-    final ValueChanged<RangeValues> onChanged = !enabled ? null : (RangeValues newValues) {
+    final ValueChanged<RangeValues>? onChanged = !enabled ? null : (RangeValues newValues) {
       values = newValues;
     };
     return MaterialApp(
@@ -1284,12 +1284,12 @@ void main() {
     RangeValues values = const RangeValues(0.5, 0.75);
 
     Widget buildApp({
-      Color activeColor,
-      Color inactiveColor,
-      int divisions,
+      Color? activeColor,
+      Color? inactiveColor,
+      int? divisions,
       bool enabled = true,
     }) {
-      final ValueChanged<RangeValues> onChanged = !enabled ? null : (RangeValues newValues) {
+      final ValueChanged<RangeValues>? onChanged = !enabled ? null : (RangeValues newValues) {
         values = newValues;
       };
       return MaterialApp(
@@ -1319,7 +1319,7 @@ void main() {
 
     await tester.pumpWidget(buildApp(divisions: 3));
 
-    final RenderBox valueIndicatorBox = tester.firstRenderObject(find.byType(Overlay));
+    final RenderBox valueIndicatorBox = tester.renderObject(find.byType(Overlay));
 
     final Offset topRight = tester.getTopRight(find.byType(RangeSlider)).translate(-24, 0);
     final TestGesture gesture = await tester.startGesture(topRight);
@@ -1330,65 +1330,62 @@ void main() {
       valueIndicatorBox,
       paints
         ..path(color: sliderTheme.valueIndicatorColor)
-        ..path(color: sliderTheme.valueIndicatorColor),
+        ..paragraph()
     );
     await gesture.up();
     // Wait for value indicator animation to finish.
     await tester.pumpAndSettle();
-
   });
 
   testWidgets('Range Slider removes value indicator from overlay if Slider gets disposed without value indicator animation completing.', (WidgetTester tester) async {
-    final ThemeData theme = _buildTheme();
-    final SliderThemeData sliderTheme = theme.sliderTheme;
     RangeValues values = const RangeValues(0.5, 0.75);
+    const Color fillColor = Color(0xf55f5f5f);
 
     Widget buildApp({
-      Color activeColor,
-      Color inactiveColor,
-      int divisions,
+      Color? activeColor,
+      Color? inactiveColor,
+      int? divisions,
       bool enabled = true,
     }) {
       final ValueChanged<RangeValues> onChanged = (RangeValues newValues) {
         values = newValues;
       };
       return MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.ltr,
-          child: Material(
-            child: Navigator(onGenerateRoute: (RouteSettings settings) {
-              return MaterialPageRoute<void>(builder: (BuildContext context) {
-                return Column(
-                  children: <Widget>[
-                    Theme(
-                      data: theme,
-                      child: RangeSlider(
-                        values: values,
-                        labels: RangeLabels(values.start.toStringAsFixed(2),
-                            values.end.toStringAsFixed(2)),
-                        divisions: divisions,
-                        onChanged: onChanged,
-                      ),
+        home: Scaffold(
+          // The builder is used to pass the context from the MaterialApp widget
+          // to the [Navigator]. This context is required in order for the
+          // Navigator to work.
+          body: Builder(
+            builder: (BuildContext context) {
+              return Column(
+                children: <Widget>[
+                  RangeSlider(
+                    values: values,
+                    labels: RangeLabels(
+                      values.start.toStringAsFixed(2),
+                      values.end.toStringAsFixed(2),
                     ),
-                    RaisedButton(
-                      child: const Text('Next'),
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute<void>(
-                            builder: (BuildContext context) {
-                              return RaisedButton(
-                                child: const Text('Inner page'),
-                                onPressed: () => Navigator.of(context).pop(),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              });
-            }),
+                    divisions: divisions,
+                    onChanged: onChanged,
+                  ),
+                  ElevatedButton(
+                    child: const Text('Next'),
+                    onPressed: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) {
+                            return ElevatedButton(
+                              child: const Text('Inner page'),
+                              onPressed: () { Navigator.of(context).pop(); },
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
           ),
         ),
       );
@@ -1396,23 +1393,28 @@ void main() {
 
     await tester.pumpWidget(buildApp(divisions: 3));
 
-    /// The value indicator is added to the overlay when it is clicked or dragged.
-    /// Because both of these gestures are occurring then it adds same value indicator
-    /// twice into the overlay.
-    final RenderBox valueIndicatorBox = tester.firstRenderObject(find.byType(Overlay));
+    final RenderObject valueIndicatorBox = tester.renderObject(find.byType(Overlay));
     final Offset topRight = tester.getTopRight(find.byType(RangeSlider)).translate(-24, 0);
     final TestGesture gesture = await tester.startGesture(topRight);
     // Wait for value indicator animation to finish.
     await tester.pumpAndSettle();
 
-    expect(find.byType(RangeSlider), isNotNull);
     expect(
       valueIndicatorBox,
       paints
-        ..rrect(color: sliderTheme.inactiveTrackColor)
-        ..rect(color: sliderTheme.activeTrackColor)
-        ..rrect(color: sliderTheme.inactiveTrackColor),
+      // Represents the raised button wth next text.
+      ..path(color: Colors.black)
+      ..paragraph()
+      // Represents the range slider.
+      ..path(color: fillColor)
+      ..paragraph()
+      ..path(color: fillColor)
+      ..paragraph(),
     );
+
+    // Represents the Raised Button and Range Slider.
+    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawPath, 3));
+    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawParagraph, 3));
 
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
@@ -1421,12 +1423,17 @@ void main() {
     expect(
       valueIndicatorBox,
       isNot(
-         paints
-           ..rrect(color: sliderTheme.inactiveTrackColor)
-           ..rect(color: sliderTheme.activeTrackColor)
-           ..rrect(color: sliderTheme.inactiveTrackColor)
+       paints
+         ..path(color: fillColor)
+         ..paragraph()
+         ..path(color: fillColor)
+         ..paragraph(),
       ),
     );
+
+    // Represents the raised button with inner page text.
+    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawPath, 1));
+    expect(valueIndicatorBox, paintsExactlyCountTimes(#drawParagraph, 1));
 
     // Don't stop holding the value indicator.
     await gesture.up();
@@ -1490,8 +1497,8 @@ void main() {
     await tester.pumpAndSettle();
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
-    expect(values.start, closeTo(0.5, 0.03));
-    expect(values.end, closeTo(0.5, 0.03));
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.03));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.03));
     await tester.pumpAndSettle();
 
     expect(
@@ -1548,7 +1555,7 @@ void main() {
       ),
     );
 
-    final RenderBox valueIndicatorBox = tester.firstRenderObject(find.byType(Overlay));
+    final RenderBox valueIndicatorBox = tester.renderObject(find.byType(Overlay));
 
     // Get the bounds of the track by finding the slider edges and translating
     // inwards by the overlay radius.
@@ -1563,8 +1570,8 @@ void main() {
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
     await tester.pumpAndSettle();
-    expect(values.start, closeTo(0.5, 0.03));
-    expect(values.end, closeTo(0.5, 0.03));
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.03));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.03));
     final TestGesture gesture = await tester.startGesture(middle);
     await tester.pumpAndSettle();
 
@@ -1572,8 +1579,7 @@ void main() {
       valueIndicatorBox,
       paints
         ..path(color: sliderTheme.valueIndicatorColor)
-        ..path(color: sliderTheme.overlappingShapeStrokeColor)
-        ..path(color: sliderTheme.valueIndicatorColor),
+        ..paragraph()
     );
 
     await gesture.up();
@@ -1624,7 +1630,7 @@ void main() {
       ),
     );
 
-    final RenderBox valueIndicatorBox = tester.firstRenderObject(find.byType(Overlay));
+    final RenderBox valueIndicatorBox = tester.renderObject(find.byType(Overlay));
 
     // Get the bounds of the track by finding the slider edges and translating
     // inwards by the overlay radius.
@@ -1639,8 +1645,8 @@ void main() {
     final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
     await tester.dragFrom(rightTarget, middle - rightTarget);
     await tester.pumpAndSettle();
-    expect(values.start, closeTo(0.5, 0.03));
-    expect(values.end, closeTo(0.5, 0.03));
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.03));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.03));
     final TestGesture gesture = await tester.startGesture(middle);
     await tester.pumpAndSettle();
 
@@ -1648,11 +1654,149 @@ void main() {
       valueIndicatorBox,
       paints
         ..path(color: sliderTheme.valueIndicatorColor)
-        ..path(color: sliderTheme.overlappingShapeStrokeColor)
-        ..path(color: sliderTheme.valueIndicatorColor),
+        ..paragraph()
     );
 
     await gesture.up();
+  });
+
+  testWidgets('Range Slider thumb gets stroked when overlapping', (WidgetTester tester) async {
+    RangeValues values = const RangeValues(0.3, 0.7);
+
+    final ThemeData theme = ThemeData(
+      platform: TargetPlatform.android,
+      primarySwatch: Colors.blue,
+      sliderTheme: const SliderThemeData(
+        valueIndicatorColor: Color(0xff000001),
+        showValueIndicator: ShowValueIndicator.onlyForContinuous,
+      ),
+    );
+    final SliderThemeData sliderTheme = theme.sliderTheme;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Material(
+                child: Center(
+                  child: Theme(
+                    data: theme,
+                    child: RangeSlider(
+                      values: values,
+                      labels: RangeLabels(values.start.toStringAsFixed(2), values.end.toStringAsFixed(2)),
+                      onChanged: (RangeValues newValues) {
+                        setState(() {
+                          values = newValues;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    // Get the bounds of the track by finding the slider edges and translating
+    // inwards by the overlay radius.
+    final Offset topLeft = tester.getTopLeft(find.byType(RangeSlider)).translate(24, 0);
+    final Offset bottomRight = tester.getBottomRight(find.byType(RangeSlider)).translate(-24, 0);
+    final Offset middle = topLeft + bottomRight / 2;
+
+    // Drag the thumbs towards the center.
+    final Offset leftTarget = topLeft + (bottomRight - topLeft) * 0.3;
+    await tester.dragFrom(leftTarget, middle - leftTarget);
+    await tester.pumpAndSettle();
+    final Offset rightTarget = topLeft + (bottomRight - topLeft) * 0.7;
+    await tester.dragFrom(rightTarget, middle - rightTarget);
+    await tester.pumpAndSettle();
+    expect(values.start, moreOrLessEquals(0.5, epsilon: 0.03));
+    expect(values.end, moreOrLessEquals(0.5, epsilon: 0.03));
+    final TestGesture gesture = await tester.startGesture(middle);
+    await tester.pumpAndSettle();
+
+    /// The first circle is the thumb, the second one is the overlapping shape
+    /// circle, and the last one is the second thumb.
+    expect(
+        find.byType(RangeSlider),
+        paints
+          ..circle()
+          ..circle(color: sliderTheme.overlappingShapeStrokeColor)
+          ..circle()
+    );
+
+    await gesture.up();
+
+    expect(
+        find.byType(RangeSlider),
+        paints
+          ..circle()
+          ..circle(color: sliderTheme.overlappingShapeStrokeColor)
+          ..circle()
+    );
+  });
+
+  testWidgets('Range Slider Semantics', (WidgetTester tester) async {
+    await tester.pumpWidget(
+        MaterialApp(
+          home: Theme(
+            data: ThemeData.light(),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: MediaQuery(
+                data: MediaQueryData.fromWindow(window),
+                child: Material(
+                  child: RangeSlider(
+                    values: const RangeValues(10.0, 12.0),
+                    min: 0.0,
+                    max: 100.0,
+                    onChanged: (RangeValues v) { },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSemantics(find.byType(RangeSlider)),
+      matchesSemantics(
+        scopesRoute: true,
+        children:<Matcher>[
+          matchesSemantics(
+            children:  <Matcher>[
+              matchesSemantics(
+                isEnabled: true,
+                isSlider: true,
+                hasEnabledState: true,
+                hasIncreaseAction: true,
+                hasDecreaseAction: true,
+                value: '10%',
+                increasedValue: '10%',
+                decreasedValue: '5%',
+              ),
+              matchesSemantics(
+                isEnabled: true,
+                isSlider: true,
+                hasEnabledState: true,
+                hasIncreaseAction: true,
+                hasDecreaseAction: true,
+                value: '12%',
+                increasedValue: '17%',
+                decreasedValue: '12%',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   });
 
   testWidgets('Range Slider implements debugFillProperties', (WidgetTester tester) async {
@@ -1688,5 +1832,130 @@ void main() {
       'activeColor: MaterialColor(primary value: Color(0xff2196f3))',
       'inactiveColor: MaterialColor(primary value: Color(0xff9e9e9e))',
     ]);
+  });
+
+  testWidgets('Range Slider can be painted in a narrower constraint when track shape is RoundedRectRange', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Material(
+            child: Center(
+              child: SizedBox(
+                height: 10.0,
+                width: 0.0,
+                child: RangeSlider(
+                  values: const RangeValues(0.25, 0.5),
+                  onChanged: null,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // _RenderRangeSlider is the last render object in the tree.
+    final RenderObject renderObject = tester.allRenderObjects.last;
+
+    expect(renderObject,
+        paints
+          // left inactive track RRect
+          ..rrect(rrect: RRect.fromLTRBAndCorners(-24.0, 3.0, -12.0, 7.0, topLeft: const Radius.circular(2.0), bottomLeft: const Radius.circular(2.0)))
+          // active track RRect
+          ..rect(rect: const Rect.fromLTRB(-12.0, 2.0, 0.0, 8.0))
+          // right inactive track RRect
+          ..rrect(rrect: RRect.fromLTRBAndCorners(0.0, 3.0, 24.0, 7.0, topRight: const Radius.circular(2.0), bottomRight: const Radius.circular(2.0)))
+          // thumbs
+          ..circle(x: -12.0, y: 5.0, radius: 10.0,)
+          ..circle(x: 0.0, y: 5.0, radius: 10.0,)
+    );
+  });
+
+  testWidgets('Range Slider can be painted in a narrower constraint when track shape is Rectangular', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+            sliderTheme: const SliderThemeData(
+              rangeTrackShape: RectangularRangeSliderTrackShape(),
+            )
+        ),
+        home: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Material(
+            child: Center(
+              child: SizedBox(
+                height: 10.0,
+                width: 0.0,
+                child: RangeSlider(
+                  values: const RangeValues(0.25, 0.5),
+                  onChanged: null,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // _RenderRangeSlider is the last render object in the tree.
+    final RenderObject renderObject = tester.allRenderObjects.last;
+
+    //There should no gap between the inactive track and active track.
+    expect(renderObject,
+        paints
+        // left inactive track RRect
+          ..rect(rect: const Rect.fromLTRB(-24.0, 3.0, -12.0, 7.0))
+        // active track RRect
+          ..rect(rect: const Rect.fromLTRB(-12.0, 3.0, 0.0, 7.0))
+        // right inactive track RRect
+          ..rect(rect: const Rect.fromLTRB(0.0, 3.0, 24.0, 7.0))
+        // thumbs
+          ..circle(x: -12.0, y: 5.0, radius: 10.0,)
+          ..circle(x: 0.0, y: 5.0, radius: 10.0,)
+    );
+  });
+
+  testWidgets('Update the divisions and values at the same time for RangeSlider', (WidgetTester tester) async {
+    // Regress test for https://github.com/flutter/flutter/issues/65943
+    Widget buildFrame(double maxValue) {
+      return MaterialApp(
+        home: Material(
+          child: Center(
+            child: RangeSlider(
+              values: const RangeValues(5, 8),
+              max: maxValue,
+              divisions: maxValue.toInt(),
+              onChanged: (RangeValues newValue) {},
+            ),
+          ),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildFrame(10));
+
+    // _RenderRangeSlider is the last render object in the tree.
+    final RenderObject renderObject = tester.allRenderObjects.last;
+
+    // Update the divisions from 10 to 15, the thumbs should be paint at the correct position.
+    await tester.pumpWidget(buildFrame(15));
+    await tester.pumpAndSettle(); // Finish the animation.
+
+    late Rect activeTrackRect;
+    expect(renderObject, paints..something((Symbol method, List<dynamic> arguments) {
+      if (method != #drawRect)
+        return false;
+      activeTrackRect = arguments[0] as Rect;
+      return true;
+    }));
+
+    // The 1st thumb should at one-third(5 / 15) of the Slider.
+    // The 2nd thumb should at (8 / 15) of the Slider.
+    // The left of the active track shape is the position of the 1st thumb.
+    // The right of the active track shape is the position of the 2nd thumb.
+    // 24.0 is the default margin, (800.0 - 24.0 - 24.0) is the slider's width.
+    expect(nearEqual(activeTrackRect.left, (800.0 - 24.0 - 24.0) * (5 / 15) + 24.0, 0.01), true);
+    expect(nearEqual(activeTrackRect.right, (800.0 - 24.0 - 24.0) * (8 / 15) + 24.0, 0.01), true);
   });
 }

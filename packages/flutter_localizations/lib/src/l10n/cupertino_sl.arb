@@ -29,6 +29,7 @@
   "copyButtonLabel": "Kopiraj",
   "pasteButtonLabel": "Prilepi",
   "selectAllButtonLabel": "Izberi vse",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Opusti"
+  "tabSemanticsLabel": "Zavihek $tabIndex od $tabCount",
+  "modalBarrierDismissLabel": "Opusti",
+  "searchTextFieldPlaceholderLabel": "Iskanje"
 }

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import '../../artifacts.dart';
 import '../../base/file_system.dart';
 import '../../build_info.dart';
@@ -9,7 +11,7 @@ import '../build_system.dart';
 import '../depfile.dart';
 import '../exceptions.dart';
 import 'assets.dart';
-import 'dart.dart';
+import 'common.dart';
 import 'desktop.dart';
 import 'icon_tree_shaker.dart';
 
@@ -22,6 +24,7 @@ const List<String> _kWindowsArtifacts = <String>[
   'flutter_export.h',
   'flutter_messenger.h',
   'flutter_plugin_registrar.h',
+  'flutter_texture_registrar.h',
   'flutter_windows.h',
 ];
 
@@ -132,7 +135,11 @@ abstract class BundleWindowsAssets extends Target {
       environment.buildDir.childFile('app.dill')
         .copySync(outputDirectory.childFile('kernel_blob.bin').path);
     }
-    final Depfile depfile = await copyAssets(environment, outputDirectory);
+    final Depfile depfile = await copyAssets(
+      environment,
+      outputDirectory,
+      targetPlatform: TargetPlatform.windows_x64,
+    );
     final DepfileService depfileService = DepfileService(
       fileSystem: environment.fileSystem,
       logger: environment.logger,

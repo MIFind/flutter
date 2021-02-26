@@ -19,6 +19,7 @@
   "copyButtonLabel": "Nusxa olish",
   "pasteButtonLabel": "Joylash",
   "selectAllButtonLabel": "Barchasini tanlash",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Yopish"
+  "tabSemanticsLabel": "$tabCount varaqdan $tabIndex",
+  "modalBarrierDismissLabel": "Yopish",
+  "searchTextFieldPlaceholderLabel": "Qidiruv"
 }

@@ -2,23 +2,27 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
+import 'dart:math';
+
 import 'package:crypto/crypto.dart';
+import 'package:meta/meta.dart';
 import 'package:package_config/package_config.dart';
 
 import '../../artifacts.dart';
 import '../../base/file_system.dart';
 import '../../base/io.dart';
 import '../../build_info.dart';
+import '../../dart/language_version.dart';
 import '../../dart/package_map.dart';
 import '../../globals.dart' as globals;
+import '../../project.dart';
 import '../build_system.dart';
 import '../depfile.dart';
 import 'assets.dart';
-import 'dart.dart';
+import 'common.dart';
 import 'localizations.dart';
-
-/// Whether web builds should call the platform initialization logic.
-const String kInitializePlatform = 'InitializePlatform';
 
 /// Whether the application has web plugins.
 const String kHasWebPlugins = 'HasWebPlugins';
@@ -28,13 +32,40 @@ const String kHasWebPlugins = 'HasWebPlugins';
 /// Valid values are O1 (lowest, profile default) to O4 (highest, release default).
 const String kDart2jsOptimization = 'Dart2jsOptimization';
 
-/// Allow specifying experiments for dart2js.
-///
-/// Multiple values should be encoded as a comma-separated list.
-const String kEnableExperiment = 'EnableExperiment';
-
 /// Whether to disable dynamic generation code to satisfy csp policies.
 const String kCspMode = 'cspMode';
+
+/// The caching strategy to use for service worker generation.
+const String kServiceWorkerStrategy = 'ServiceWorkerStrategy';
+
+/// Whether the dart2js build should output source maps.
+const String kSourceMapsEnabled = 'SourceMaps';
+
+/// Whether the dart2js native null assertions are enabled.
+const String kNativeNullAssertions = 'NativeNullAssertions';
+
+/// The caching strategy for the generated service worker.
+enum ServiceWorkerStrategy {
+  /// Download the app shell eagerly and all other assets lazily.
+  /// Prefer the offline cached version.
+  offlineFirst,
+  /// Do not generate a service worker,
+  none,
+}
+
+const String kOfflineFirst = 'offline-first';
+const String kNoneWorker = 'none';
+
+/// Convert a [value] into a [ServiceWorkerStrategy].
+ServiceWorkerStrategy _serviceWorkerStrategyFromString(String value) {
+  switch (value) {
+    case kNoneWorker:
+      return ServiceWorkerStrategy.none;
+    // offline-first is the default value for any invalid requests.
+    default:
+      return ServiceWorkerStrategy.offlineFirst;
+  }
+}
 
 /// Generates an entry point for a web target.
 // Keep this in sync with build_runner/resident_web_runner.dart
@@ -60,12 +91,18 @@ class WebEntrypointTarget extends Target {
   @override
   Future<void> build(Environment environment) async {
     final String targetFile = environment.defines[kTargetFile];
-    final bool shouldInitializePlatform = environment.defines[kInitializePlatform] == 'true';
     final bool hasPlugins = environment.defines[kHasWebPlugins] == 'true';
     final Uri importUri = environment.fileSystem.file(targetFile).absolute.uri;
+    // TODO(jonahwilliams): support configuration of this file.
+    const String packageFile = '.packages';
     final PackageConfig packageConfig = await loadPackageConfigWithLogging(
-      environment.projectDir.childFile('.packages'),
+      environment.fileSystem.file(packageFile),
       logger: environment.logger,
+    );
+    final FlutterProject flutterProject = FlutterProject.current();
+    final LanguageVersion languageVersion = determineLanguageVersion(
+      environment.fileSystem.file(targetFile),
+      packageConfig[flutterProject.manifest.appName],
     );
 
     // Use the PackageConfig to find the correct package-scheme import path
@@ -90,6 +127,8 @@ class WebEntrypointTarget extends Target {
       final String generatedImport = packageConfig.toPackageUri(generatedUri)?.toString()
         ?? generatedUri.toString();
       contents = '''
+// @dart=${languageVersion.major}.${languageVersion.minor}
+
 import 'dart:ui' as ui;
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
@@ -98,23 +137,21 @@ import '$generatedImport';
 import '$mainImport' as entrypoint;
 
 Future<void> main() async {
-  registerPlugins(webPluginRegistry);
-  if ($shouldInitializePlatform) {
-    await ui.webOnlyInitializePlatform();
-  }
+  registerPlugins(webPluginRegistrar);
+  await ui.webOnlyInitializePlatform();
   entrypoint.main();
 }
 ''';
     } else {
       contents = '''
+// @dart=${languageVersion.major}.${languageVersion.minor}
+
 import 'dart:ui' as ui;
 
 import '$mainImport' as entrypoint;
 
 Future<void> main() async {
-  if ($shouldInitializePlatform) {
-    await ui.webOnlyInitializePlatform();
-  }
+  await ui.webOnlyInitializePlatform();
   entrypoint.main();
 }
 ''';
@@ -143,7 +180,7 @@ class Dart2JSTarget extends Target {
     Source.artifact(Artifact.dart2jsSnapshot),
     Source.artifact(Artifact.engineDartBinary),
     Source.pattern('{BUILD_DIR}/main.dart'),
-    Source.pattern('{PROJECT_DIR}/.packages'),
+    Source.pattern('{PROJECT_DIR}/.dart_tool/package_config_subset'),
   ];
 
   @override
@@ -156,63 +193,54 @@ class Dart2JSTarget extends Target {
 
   @override
   Future<void> build(Environment environment) async {
-    final String dart2jsOptimization = environment.defines[kDart2jsOptimization];
-    final bool csp = environment.defines[kCspMode] == 'true';
     final BuildMode buildMode = getBuildModeForName(environment.defines[kBuildMode]);
-    final String specPath = globals.fs.path.join(
-      globals.artifacts.getArtifactPath(Artifact.flutterWebSdk), 'libraries.json');
-    final String packageFile = globalPackagesPath;
-    final File outputKernel = environment.buildDir.childFile('app.dill');
-    final File outputFile = environment.buildDir.childFile('main.dart.js');
-    final List<String> dartDefines = decodeDartDefines(environment.defines);
-    final String enabledExperiments = environment.defines[kEnableExperiment];
+    final bool sourceMapsEnabled = environment.defines[kSourceMapsEnabled] == 'true';
+    final bool nativeNullAssertions = environment.defines[kNativeNullAssertions] == 'true';
+
+    final List<String> sharedCommandOptions = <String>[
+      globals.artifacts.getArtifactPath(Artifact.engineDartBinary),
+      '--disable-dart-dev',
+      globals.artifacts.getArtifactPath(Artifact.dart2jsSnapshot),
+      '--libraries-spec=${globals.fs.path.join(globals.artifacts.getArtifactPath(Artifact.flutterWebSdk), 'libraries.json')}',
+      ...?decodeCommaSeparated(environment.defines, kExtraFrontEndOptions),
+      if (nativeNullAssertions)
+        '--native-null-assertions',
+      if (buildMode == BuildMode.profile)
+        '-Ddart.vm.profile=true'
+      else
+        '-Ddart.vm.product=true',
+      for (final String dartDefine in decodeDartDefines(environment.defines, kDartDefines))
+        '-D$dartDefine',
+      if (!sourceMapsEnabled)
+        '--no-source-maps',
+    ];
 
     // Run the dart2js compilation in two stages, so that icon tree shaking can
     // parse the kernel file for web builds.
     final ProcessResult kernelResult = await globals.processManager.run(<String>[
-      globals.artifacts.getArtifactPath(Artifact.engineDartBinary),
-      globals.artifacts.getArtifactPath(Artifact.dart2jsSnapshot),
-      '--libraries-spec=$specPath',
-      if (enabledExperiments != null)
-        '--enable-experiment=$enabledExperiments',
+      ...sharedCommandOptions,
       '-o',
-      outputKernel.path,
-      '--packages=$packageFile',
-      if (buildMode == BuildMode.profile)
-        '-Ddart.vm.profile=true'
-      else
-        '-Ddart.vm.product=true',
-      for (final String dartDefine in dartDefines)
-        '-D$dartDefine',
+      environment.buildDir.childFile('app.dill').path,
+      '--packages=.packages',
       '--cfe-only',
-      environment.buildDir.childFile('main.dart').path,
+      environment.buildDir.childFile('main.dart').path, // dartfile
     ]);
     if (kernelResult.exitCode != 0) {
       throw Exception(kernelResult.stdout + kernelResult.stderr);
     }
-    final ProcessResult javaScriptResult = await globals.processManager.run(<String>[
-      globals.artifacts.getArtifactPath(Artifact.engineDartBinary),
-      globals.artifacts.getArtifactPath(Artifact.dart2jsSnapshot),
-      '--libraries-spec=$specPath',
-      if (enabledExperiments != null)
-        '--enable-experiment=$enabledExperiments',
-      if (dart2jsOptimization != null)
-        '-$dart2jsOptimization'
-      else
-        '-O4',
-      if (buildMode == BuildMode.profile)
-        '-Ddart.vm.profile=true'
-      else
-        '-Ddart.vm.product=true',
-      for (final String dartDefine in dartDefines)
-        '-D$dartDefine',
-      if (buildMode == BuildMode.profile)
-        '--no-minify',
-      if (csp)
-        '--csp',
+
+    final String dart2jsOptimization = environment.defines[kDart2jsOptimization];
+    final File outputJSFile = environment.buildDir.childFile('main.dart.js');
+    final bool csp = environment.defines[kCspMode] == 'true';
+
+    final ProcessResult javaScriptResult = await environment.processManager.run(<String>[
+      ...sharedCommandOptions,
+      if (dart2jsOptimization != null) '-$dart2jsOptimization' else '-O4',
+      if (buildMode == BuildMode.profile) '--no-minify',
+      if (csp) '--csp',
       '-o',
-      outputFile.path,
-      environment.buildDir.childFile('app.dill').path,
+      outputJSFile.path,
+      environment.buildDir.childFile('app.dill').path, // dartfile
     ]);
     if (javaScriptResult.exitCode != 0) {
       throw Exception(javaScriptResult.stdout + javaScriptResult.stderr);
@@ -230,7 +258,7 @@ class Dart2JSTarget extends Target {
     );
     final Depfile depfile = depfileService.parseDart2js(
       environment.buildDir.childFile('app.dill.deps'),
-      outputFile,
+      outputJSFile,
     );
     depfileService.writeToFile(
       depfile,
@@ -239,7 +267,7 @@ class Dart2JSTarget extends Target {
   }
 }
 
-/// Unpacks the dart2js compilation and resources to a given output directory
+/// Unpacks the dart2js compilation and resources to a given output directory.
 class WebReleaseBundle extends Target {
   const WebReleaseBundle();
 
@@ -284,9 +312,18 @@ class WebReleaseBundle extends Target {
         environment.outputDir.childFile(globals.fs.path.basename(outputFile.path)).path
       );
     }
+
+    final String versionInfo = FlutterProject.current().getVersionInfo();
+    environment.outputDir
+        .childFile('version.json')
+        .writeAsStringSync(versionInfo);
     final Directory outputDirectory = environment.outputDir.childDirectory('assets');
     outputDirectory.createSync(recursive: true);
-    final Depfile depfile = await copyAssets(environment, environment.outputDir.childDirectory('assets'));
+    final Depfile depfile = await copyAssets(
+      environment,
+      environment.outputDir.childDirectory('assets'),
+      targetPlatform: TargetPlatform.web_javascript,
+    );
     final DepfileService depfileService = DepfileService(
       fileSystem: globals.fs,
       logger: globals.logger,
@@ -312,8 +349,27 @@ class WebReleaseBundle extends Target {
       if (!outputFile.parent.existsSync()) {
         outputFile.parent.createSync(recursive: true);
       }
-      inputFile.copySync(outputFile.path);
       outputResourcesFiles.add(outputFile);
+      // insert a random hash into the requests for service_worker.js. This is not a content hash,
+      // because it would need to be the hash for the entire bundle and not just the resource
+      // in question.
+      if (environment.fileSystem.path.basename(inputFile.path) == 'index.html') {
+        final String randomHash = Random().nextInt(4294967296).toString();
+        final String resultString = inputFile.readAsStringSync()
+          .replaceFirst(
+            'var serviceWorkerVersion = null',
+            "var serviceWorkerVersion = '$randomHash'",
+          )
+          // This is for legacy index.html that still use the old service
+          // worker loading mechanism.
+          .replaceFirst(
+            "navigator.serviceWorker.register('flutter_service_worker.js')",
+            "navigator.serviceWorker.register('flutter_service_worker.js?v=$randomHash')",
+          );
+        outputFile.writeAsStringSync(resultString);
+        continue;
+      }
+      inputFile.copySync(outputFile.path);
     }
     final Depfile resourceFile = Depfile(inputResourceFiles, outputResourcesFiles);
     depfileService.writeToFile(
@@ -379,16 +435,23 @@ class WebServiceWorker extends Target {
     final File serviceWorkerFile = environment.outputDir
       .childFile('flutter_service_worker.js');
     final Depfile depfile = Depfile(contents, <File>[serviceWorkerFile]);
-    final String serviceWorker = generateServiceWorker(urlToHash, <String>[
-      '/',
-      'main.dart.js',
-      'index.html',
-      'assets/LICENSE',
-      if (urlToHash.containsKey('assets/AssetManifest.json'))
-        'assets/AssetManifest.json',
-      if (urlToHash.containsKey('assets/FontManifest.json'))
-        'assets/FontManifest.json',
-    ]);
+    final ServiceWorkerStrategy serviceWorkerStrategy = _serviceWorkerStrategyFromString(
+      environment.defines[kServiceWorkerStrategy],
+    );
+    final String serviceWorker = generateServiceWorker(
+      urlToHash,
+      <String>[
+        '/',
+        'main.dart.js',
+        'index.html',
+        'assets/NOTICES',
+        if (urlToHash.containsKey('assets/AssetManifest.json'))
+          'assets/AssetManifest.json',
+        if (urlToHash.containsKey('assets/FontManifest.json'))
+          'assets/FontManifest.json',
+      ],
+      serviceWorkerStrategy: serviceWorkerStrategy,
+    );
     serviceWorkerFile
       .writeAsStringSync(serviceWorker);
     final DepfileService depfileService = DepfileService(
@@ -408,7 +471,14 @@ class WebServiceWorker extends Target {
 /// The tool embeds file hashes directly into the worker so that the byte for byte
 /// invalidation will automatically reactivate workers whenever a new
 /// version is deployed.
-String generateServiceWorker(Map<String, String> resources, List<String> coreBundle) {
+String generateServiceWorker(
+  Map<String, String> resources,
+  List<String> coreBundle, {
+  @required ServiceWorkerStrategy serviceWorkerStrategy,
+}) {
+  if (serviceWorkerStrategy == ServiceWorkerStrategy.none) {
+    return '';
+  }
   return '''
 'use strict';
 const MANIFEST = 'flutter-app-manifest';
@@ -422,13 +492,13 @@ const RESOURCES = {
 // start.
 const CORE = [
   ${coreBundle.map((String file) => '"$file"').join(',\n')}];
-
 // During install, the TEMP cache is populated with the application shell files.
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   return event.waitUntil(
     caches.open(TEMP).then((cache) => {
-      // Provide a no-cache param to ensure the latest version is downloaded.
-      return cache.addAll(CORE.map((value) => new Request(value, {'cache': 'no-cache'})));
+      return cache.addAll(
+        CORE.map((value) => new Request(value, {'cache': 'reload'})));
     })
   );
 });
@@ -443,7 +513,6 @@ self.addEventListener("activate", function(event) {
       var tempCache = await caches.open(TEMP);
       var manifestCache = await caches.open(MANIFEST);
       var manifest = await manifestCache.match('manifest');
-
       // When there is no prior manifest, clear the entire cache.
       if (!manifest) {
         await caches.delete(CACHE_NAME);
@@ -457,7 +526,6 @@ self.addEventListener("activate", function(event) {
         await manifestCache.put('manifest', new Response(JSON.stringify(RESOURCES)));
         return;
       }
-
       var oldManifest = await manifest.json();
       var origin = self.location.origin;
       for (var request of await contentCache.keys()) {
@@ -495,24 +563,33 @@ self.addEventListener("activate", function(event) {
 // The fetch handler redirects requests for RESOURCE files to the service
 // worker cache.
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== 'GET') {
+    return;
+  }
   var origin = self.location.origin;
   var key = event.request.url.substring(origin.length + 1);
   // Redirect URLs to the index.html
-  if (event.request.url == origin || event.request.url.startsWith(origin + '/#')) {
+  if (key.indexOf('?v=') != -1) {
+    key = key.split('?v=')[0];
+  }
+  if (event.request.url == origin || event.request.url.startsWith(origin + '/#') || key == '') {
     key = '/';
   }
-  // If the URL is not the the RESOURCE list, skip the cache.
+  // If the URL is not the RESOURCE list then return to signal that the
+  // browser should take over.
   if (!RESOURCES[key]) {
-    return event.respondWith(fetch(event.request));
+    return;
+  }
+  // If the URL is the index.html, perform an online-first request.
+  if (key == '/') {
+    return onlineFirst(event);
   }
   event.respondWith(caches.open(CACHE_NAME)
     .then((cache) =>  {
       return cache.match(event.request).then((response) => {
         // Either respond with the cached resource, or perform a fetch and
-        // lazily populate the cache. Ensure the resources are not cached
-        // by the browser for longer than the service worker expects.
-        var modifiedRequest = new Request(event.request, {'cache': 'no-cache'});
-        return response || fetch(modifiedRequest).then((response) => {
+        // lazily populate the cache.
+        return response || fetch(event.request).then((response) => {
           cache.put(event.request, response.clone());
           return response;
         });
@@ -524,12 +601,13 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener('message', (event) => {
   // SkipWaiting can be used to immediately activate a waiting service worker.
   // This will also require a page refresh triggered by the main worker.
-  if (event.message == 'skipWaiting') {
-    return self.skipWaiting();
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+    return;
   }
-
-  if (event.message = 'downloadOffline') {
+  if (event.data === 'downloadOffline') {
     downloadOffline();
+    return;
   }
 });
 
@@ -546,12 +624,34 @@ async function downloadOffline() {
     }
     currentContent[key] = true;
   }
-  for (var resourceKey in Object.keys(RESOURCES)) {
+  for (var resourceKey of Object.keys(RESOURCES)) {
     if (!currentContent[resourceKey]) {
-      resources.add(resourceKey);
+      resources.push(resourceKey);
     }
   }
-  return Cache.addAll(resources);
+  return contentCache.addAll(resources);
+}
+
+// Attempt to download the resource online before falling back to
+// the offline cache.
+function onlineFirst(event) {
+  return event.respondWith(
+    fetch(event.request).then((response) => {
+      return caches.open(CACHE_NAME).then((cache) => {
+        cache.put(event.request, response.clone());
+        return response;
+      });
+    }).catch((error) => {
+      return caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((response) => {
+          if (response != null) {
+            return response;
+          }
+          throw error;
+        });
+      });
+    })
+  );
 }
 ''';
 }

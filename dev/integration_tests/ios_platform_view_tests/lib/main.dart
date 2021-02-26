@@ -43,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Column(children: <Widget>[
-        FlatButton(
+        TextButton(
           key: const ValueKey<String>('platform_view_button'),
           child: const Text('show platform view'),
           onPressed: () {
@@ -55,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         ),
         // Push this button to perform an animation, which ensure the threads are unmerged after the animation.
-        RaisedButton(
+        ElevatedButton(
           key: const ValueKey<String>('unmerge_button'),
           child: const Text('Tap to unmerge threads'),
           onPressed: () {},
@@ -77,12 +77,13 @@ class PlatformViewPage extends StatelessWidget {
       ),
       body: Column(
         children: <Widget>[
-          Container(
-            child: const UiKitView(viewType: 'platform_view'),
-            width: 300,
-            height: 300,
+          Expanded(
+            child: Container(
+              child: const UiKitView(viewType: 'platform_view'),
+              width: 300,
+            ),
           ),
-          RaisedButton(
+          ElevatedButton(
             key: button,
             child: const Text('button'),
             onPressed: (){},

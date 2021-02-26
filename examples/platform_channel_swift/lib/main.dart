@@ -24,7 +24,7 @@ class _PlatformChannelState extends State<PlatformChannel> {
   Future<void> _getBatteryLevel() async {
     String batteryLevel;
     try {
-      final int result = await methodChannel.invokeMethod('getBatteryLevel');
+      final int? result = await methodChannel.invokeMethod('getBatteryLevel');
       batteryLevel = 'Battery level: $result%.';
     } on PlatformException {
       batteryLevel = 'Failed to get battery level.';
@@ -40,7 +40,7 @@ class _PlatformChannelState extends State<PlatformChannel> {
     eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
   }
 
-  void _onEvent(Object event) {
+  void _onEvent(Object? event) {
     setState(() {
       _chargingStatus =
           "Battery status: ${event == 'charging' ? '' : 'dis'}charging.";
@@ -65,7 +65,7 @@ class _PlatformChannelState extends State<PlatformChannel> {
               Text(_batteryLevel, key: const Key('Battery level label')),
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: RaisedButton(
+                child: ElevatedButton(
                   child: const Text('Refresh'),
                   onPressed: _getBatteryLevel,
                 ),

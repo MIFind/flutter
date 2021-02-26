@@ -29,6 +29,7 @@
   "copyButtonLabel": "Kopírovat",
   "pasteButtonLabel": "Vložit",
   "selectAllButtonLabel": "Vybrat vše",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Zavřít"
+  "tabSemanticsLabel": "Karta $tabIndex z $tabCount",
+  "modalBarrierDismissLabel": "Zavřít",
+  "searchTextFieldPlaceholderLabel": "Hledat"
 }

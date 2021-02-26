@@ -14,7 +14,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_static/shelf_static.dart';
 
 import 'package:flutter_devicelab/framework/browser.dart';
-import 'package:flutter_devicelab/framework/framework.dart';
+import 'package:flutter_devicelab/framework/task_result.dart';
 import 'package:flutter_devicelab/framework/utils.dart';
 
 /// The port number used by the local benchmark server.
@@ -29,8 +29,7 @@ Future<TaskResult> runWebBenchmark({ @required bool useCanvasKit }) async {
     await evalFlutter('build', options: <String>[
       'web',
       '--dart-define=FLUTTER_WEB_ENABLE_PROFILING=true',
-      if (useCanvasKit)
-        '--dart-define=FLUTTER_WEB_USE_SKIA=true',
+      '--web-renderer=${useCanvasKit ? 'canvaskit' : 'html'}',
       '--profile',
       '-t',
       'lib/web_benchmarks.dart',
@@ -99,6 +98,13 @@ Future<TaskResult> runWebBenchmark({ @required bool useCanvasKit }) async {
             profileData.complete(collectedProfiles);
             return Response.notFound('Finished running benchmarks.');
           }
+        } else if (request.requestedUri.path.endsWith('/print-to-console')) {
+          // A passthrough used by
+          // `dev/benchmarks/macrobenchmarks/lib/web_benchmarks.dart`
+          // to print information.
+          final String message = await request.readAsString();
+          print('[APP] $message');
+          return Response.ok('Reported.');
         } else {
           return Response.notFound(
               'This request is not handled by the profile-data handler.');

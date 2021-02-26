@@ -29,6 +29,7 @@
   "copyButtonLabel": "Копировать",
   "pasteButtonLabel": "Вставить",
   "selectAllButtonLabel": "Выбрать все",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Закрыть"
+  "tabSemanticsLabel": "Вкладка $tabIndex из $tabCount",
+  "modalBarrierDismissLabel": "Закрыть",
+  "searchTextFieldPlaceholderLabel": "Поиск"
 }

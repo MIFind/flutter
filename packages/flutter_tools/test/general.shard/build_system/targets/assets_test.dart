@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:file/memory.dart';
 import 'package:file_testing/file_testing.dart';
 import 'package:flutter_tools/src/artifacts.dart';
@@ -14,7 +16,6 @@ import 'package:flutter_tools/src/build_system/depfile.dart';
 import 'package:flutter_tools/src/build_system/targets/assets.dart';
 import 'package:flutter_tools/src/convert.dart';
 import 'package:flutter_tools/src/devfs.dart';
-import 'package:mockito/mockito.dart';
 
 import '../../../src/common.dart';
 import '../../../src/context.dart';
@@ -30,7 +31,7 @@ void main() {
     environment = Environment.test(
       fileSystem.currentDirectory,
       processManager: FakeProcessManager.any(),
-      artifacts: MockArtifacts(),
+      artifacts: Artifacts.test(),
       fileSystem: fileSystem,
       logger: BufferLogger.test(),
     );
@@ -89,7 +90,7 @@ flutter:
 
     expect(fileSystem.file('${environment.buildDir.path}/flutter_assets/AssetManifest.json'), exists);
     expect(fileSystem.file('${environment.buildDir.path}/flutter_assets/FontManifest.json'), exists);
-    expect(fileSystem.file('${environment.buildDir.path}/flutter_assets/LICENSE'), exists);
+    expect(fileSystem.file('${environment.buildDir.path}/flutter_assets/NOTICES'), exists);
     // See https://github.com/flutter/flutter/issues/35293
     expect(fileSystem.file('${environment.buildDir.path}/flutter_assets/assets/foo/bar.png'), exists);
     // See https://github.com/flutter/flutter/issues/46163
@@ -248,5 +249,3 @@ flutter:
     expect(logger.errorText, isEmpty);
   });
 }
-
-class MockArtifacts extends Mock implements Artifacts {}

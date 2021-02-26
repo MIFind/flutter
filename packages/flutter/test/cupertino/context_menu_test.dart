@@ -22,7 +22,7 @@ void main() {
   Widget _getContextMenu({
     Alignment alignment = Alignment.center,
     Size screenSize = const Size(800.0, 600.0),
-    Widget child,
+    Widget? child,
   }) {
     return CupertinoApp(
       home: CupertinoPageScaffold(

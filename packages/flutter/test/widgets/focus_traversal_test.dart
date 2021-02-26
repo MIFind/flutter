@@ -4,14 +4,23 @@
 
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 import 'semantics_tester.dart';
+
+/// Used to test removal of nodes while sorting.
+class SkipAllButFirstAndLastPolicy extends FocusTraversalPolicy with DirectionalFocusTraversalPolicyMixin {
+  @override
+  Iterable<FocusNode> sortDescendants(Iterable<FocusNode> descendants, FocusNode currentNode) {
+    return <FocusNode>[
+      descendants.first,
+      if (currentNode != descendants.first && currentNode != descendants.last) currentNode,
+      descendants.last,
+    ];
+  }
+}
 
 void main() {
   group(WidgetOrderTraversalPolicy, () {
@@ -44,7 +53,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key5));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       secondFocusNode.nextFocus();
 
       await tester.pump();
@@ -83,7 +92,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key5));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
 
       expect(firstFocusNode.hasFocus, isFalse);
       expect(secondFocusNode.hasFocus, isFalse);
@@ -104,10 +113,10 @@ void main() {
       final GlobalKey key4 = GlobalKey(debugLabel: '4');
       final GlobalKey key5 = GlobalKey(debugLabel: '5');
       final GlobalKey key6 = GlobalKey(debugLabel: '6');
-      bool focus1;
-      bool focus2;
-      bool focus3;
-      bool focus5;
+      bool? focus1;
+      bool? focus2;
+      bool? focus3;
+      bool? focus5;
       await tester.pumpWidget(
         FocusTraversalGroup(
           policy: WidgetOrderTraversalPolicy(),
@@ -148,7 +157,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key6));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       firstFocusNode.requestFocus();
 
       await tester.pump();
@@ -253,7 +262,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key6));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       secondFocusNode.requestFocus();
 
       await tester.pump();
@@ -286,6 +295,40 @@ void main() {
       expect(firstFocusNode.hasFocus, isTrue);
       expect(secondFocusNode.hasFocus, isFalse);
       expect(scope.hasFocus, isTrue);
+    });
+
+    testWidgets('Move focus to next/previous node while skipping nodes in policy', (WidgetTester tester) async {
+      final List<FocusNode> nodes =
+      List<FocusNode>.generate(7, (int index) => FocusNode(debugLabel: 'Node $index'));
+      await tester.pumpWidget(
+        FocusTraversalGroup(
+          policy: SkipAllButFirstAndLastPolicy(),
+          child: Column(
+            children: List<Widget>.generate(
+              nodes.length,
+              (int index) => Focus(
+                focusNode: nodes[index],
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      nodes[2].requestFocus();
+      await tester.pump();
+
+      expect(nodes[2].hasPrimaryFocus, isTrue);
+
+      primaryFocus!.nextFocus();
+      await tester.pump();
+
+      expect(nodes[6].hasPrimaryFocus, isTrue);
+
+      primaryFocus!.previousFocus();
+      await tester.pump();
+
+      expect(nodes[0].hasPrimaryFocus, isTrue);
     });
 
     testWidgets('Find the initial focus when a route is pushed or popped.', (WidgetTester tester) async {
@@ -332,7 +375,7 @@ void main() {
 
       final Element firstChild = tester.element(find.text('Go Forward'));
       final FocusNode firstFocusNode = Focus.of(firstChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       await tester.pump();
 
       expect(firstFocusNode.hasFocus, isTrue);
@@ -385,7 +428,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key5));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       secondFocusNode.nextFocus();
 
       await tester.pump();
@@ -402,10 +445,10 @@ void main() {
       final GlobalKey key4 = GlobalKey(debugLabel: '4');
       final GlobalKey key5 = GlobalKey(debugLabel: '5');
       final GlobalKey key6 = GlobalKey(debugLabel: '6');
-      bool focus1;
-      bool focus2;
-      bool focus3;
-      bool focus5;
+      bool? focus1;
+      bool? focus2;
+      bool? focus3;
+      bool? focus5;
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
@@ -456,7 +499,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key6));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       firstFocusNode.requestFocus();
 
       await tester.pump();
@@ -549,7 +592,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key6));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       secondFocusNode.requestFocus();
 
       await tester.pump();
@@ -684,7 +727,7 @@ void main() {
       for (int i = 0; i < nodeCount; ++i) {
         nodes.first.nextFocus();
         await tester.pump();
-        order.add(nodes.indexOf(primaryFocus));
+        order.add(nodes.indexOf(primaryFocus!));
       }
       expect(order, orderedEquals(<int>[0, 1, 2, 4, 3, 5, 6, 7, 8, 9]));
 
@@ -694,7 +737,7 @@ void main() {
       for (int i = 0; i < nodeCount; ++i) {
         nodes.first.nextFocus();
         await tester.pump();
-        order.add(nodes.indexOf(primaryFocus));
+        order.add(nodes.indexOf(primaryFocus!));
       }
       expect(order, orderedEquals(<int>[0, 1, 2, 4, 3, 5, 6, 8, 7, 9]));
     });
@@ -708,7 +751,7 @@ void main() {
           child: FocusTraversalGroup(
             policy: ReadingOrderTraversalPolicy(),
             child: Stack(
-              alignment: const Alignment(-1, -1),
+              alignment: Alignment.topLeft,
               children: List<Widget>.generate(nodeCount, (int index) {
                 // Boxes that all have the same upper left origin corner.
                 return Focus(
@@ -725,7 +768,7 @@ void main() {
       for (int i = 0; i < nodeCount; ++i) {
         nodes.first.nextFocus();
         await tester.pump();
-        order.add(nodes.indexOf(primaryFocus));
+        order.add(nodes.indexOf(primaryFocus!));
       }
       expect(order, orderedEquals(<int>[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]));
 
@@ -736,7 +779,7 @@ void main() {
           child: FocusTraversalGroup(
             policy: ReadingOrderTraversalPolicy(),
             child: Stack(
-              alignment: const Alignment(0, 0),
+              alignment: Alignment.center,
               children: List<Widget>.generate(nodeCount, (int index) {
                 return Focus(
                   focusNode: nodes[index],
@@ -752,7 +795,7 @@ void main() {
       for (int i = 0; i < nodeCount; ++i) {
         nodes.first.nextFocus();
         await tester.pump();
-        order.add(nodes.indexOf(primaryFocus));
+        order.add(nodes.indexOf(primaryFocus!));
       }
       expect(order, orderedEquals(<int>[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]));
 
@@ -764,7 +807,7 @@ void main() {
           child: FocusTraversalGroup(
             policy: ReadingOrderTraversalPolicy(),
             child: Stack(
-              alignment: const Alignment(0, 0),
+              alignment: Alignment.center,
               children: List<Widget>.generate(nodeCount, (int index) {
                 return Positioned(
                   top: 5.0 * index * (index + 1),
@@ -788,7 +831,7 @@ void main() {
       for (int i = 0; i < nodeCount; ++i) {
         nodes.first.nextFocus();
         await tester.pump();
-        order.add(nodes.indexOf(primaryFocus));
+        order.add(nodes.indexOf(primaryFocus!));
       }
       expect(order, orderedEquals(<int>[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]));
     });
@@ -824,7 +867,7 @@ void main() {
       final Element secondChild = tester.element(find.byKey(key2));
       final FocusNode firstFocusNode = Focus.of(firstChild);
       final FocusNode secondFocusNode = Focus.of(secondChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       secondFocusNode.nextFocus();
 
       await tester.pump();
@@ -1080,7 +1123,7 @@ void main() {
       for (int i = 0; i < nodeCount; ++i) {
         nodes.first.nextFocus();
         await tester.pump();
-        order.add(nodes.indexOf(primaryFocus));
+        order.add(nodes.indexOf(primaryFocus!));
       }
       expect(order, orderedEquals(expectedOrder));
     });
@@ -1135,7 +1178,7 @@ void main() {
 
       final Element firstChild = tester.element(find.text('Go Forward'));
       final FocusNode firstFocusNode = Focus.of(firstChild);
-      final FocusNode scope = Focus.of(firstChild).enclosingScope;
+      final FocusNode scope = Focus.of(firstChild).enclosingScope!;
       await tester.pump();
 
       expect(firstFocusNode.hasFocus, isTrue);
@@ -1164,10 +1207,10 @@ void main() {
       final GlobalKey upperRightKey = GlobalKey(debugLabel: 'upperRightKey');
       final GlobalKey lowerLeftKey = GlobalKey(debugLabel: 'lowerLeftKey');
       final GlobalKey lowerRightKey = GlobalKey(debugLabel: 'lowerRightKey');
-      bool focusUpperLeft;
-      bool focusUpperRight;
-      bool focusLowerLeft;
-      bool focusLowerRight;
+      bool? focusUpperLeft;
+      bool? focusUpperRight;
+      bool? focusLowerLeft;
+      bool? focusLowerRight;
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
@@ -1223,7 +1266,7 @@ void main() {
       final FocusNode upperRightNode = Focus.of(tester.element(find.byKey(upperRightKey)));
       final FocusNode lowerLeftNode = Focus.of(tester.element(find.byKey(lowerLeftKey)));
       final FocusNode lowerRightNode = Focus.of(tester.element(find.byKey(lowerRightKey)));
-      final FocusNode scope = upperLeftNode.enclosingScope;
+      final FocusNode scope = upperLeftNode.enclosingScope!;
       upperLeftNode.requestFocus();
 
       await tester.pump();
@@ -1299,7 +1342,7 @@ void main() {
       expect(scope.hasFocus, isTrue);
     });
 
-    testWidgets('Directional focus avoids hysterisis.', (WidgetTester tester) async {
+    testWidgets('Directional focus avoids hysteresis.', (WidgetTester tester) async {
       final List<GlobalKey> keys = <GlobalKey>[
         GlobalKey(debugLabel: 'row 1:1'),
         GlobalKey(debugLabel: 'row 2:1'),
@@ -1308,7 +1351,7 @@ void main() {
         GlobalKey(debugLabel: 'row 3:2'),
         GlobalKey(debugLabel: 'row 3:3'),
       ];
-      List<bool> focus = List<bool>.generate(keys.length, (int _) => null);
+      List<bool?> focus = List<bool?>.generate(keys.length, (int _) => null);
       Focus makeFocus(int index) {
         return Focus(
           debugLabel: keys[index].toString(),
@@ -1360,16 +1403,16 @@ void main() {
       );
 
       void clear() {
-        focus = List<bool>.generate(keys.length, (int _) => null);
+        focus = List<bool?>.generate(keys.length, (int _) => null);
       }
 
       final List<FocusNode> nodes = keys.map<FocusNode>((GlobalKey key) => Focus.of(tester.element(find.byKey(key)))).toList();
-      final FocusNode scope = nodes[0].enclosingScope;
+      final FocusNode scope = nodes[0].enclosingScope!;
       nodes[4].requestFocus();
 
-      void expectState(List<bool> states) {
+      void expectState(List<bool?> states) {
         for (int index = 0; index < states.length; ++index) {
-          expect(focus[index], states[index] == null ? isNull : (states[index] ? isTrue : isFalse));
+          expect(focus[index], states[index] == null ? isNull : (states[index]! ? isTrue : isFalse));
           if (states[index] == null) {
             expect(nodes[index].hasFocus, isFalse);
           } else {
@@ -1381,59 +1424,59 @@ void main() {
 
       // Test to make sure that the same path is followed backwards and forwards.
       await tester.pump();
-      expectState(<bool>[null, null, null, null, true, null]);
+      expectState(<bool?>[null, null, null, null, true, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.up), isTrue);
       await tester.pump();
 
-      expectState(<bool>[null, null, true, null, false, null]);
+      expectState(<bool?>[null, null, true, null, false, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.up), isTrue);
       await tester.pump();
 
-      expectState(<bool>[true, null, false, null, null, null]);
+      expectState(<bool?>[true, null, false, null, null, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.down), isTrue);
       await tester.pump();
 
-      expectState(<bool>[false, null, true, null, null, null]);
+      expectState(<bool?>[false, null, true, null, null, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.down), isTrue);
       await tester.pump();
-      expectState(<bool>[null, null, false, null, true, null]);
+      expectState(<bool?>[null, null, false, null, true, null]);
       clear();
 
       // Make sure that moving in a different axis clears the history.
       expect(scope.focusInDirection(TraversalDirection.left), isTrue);
       await tester.pump();
-      expectState(<bool>[null, null, null, true, false, null]);
+      expectState(<bool?>[null, null, null, true, false, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.up), isTrue);
       await tester.pump();
 
-      expectState(<bool>[null, true, null, false, null, null]);
+      expectState(<bool?>[null, true, null, false, null, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.up), isTrue);
       await tester.pump();
 
-      expectState(<bool>[true, false, null, null, null, null]);
+      expectState(<bool?>[true, false, null, null, null, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.down), isTrue);
       await tester.pump();
 
-      expectState(<bool>[false, true, null, null, null, null]);
+      expectState(<bool?>[false, true, null, null, null, null]);
       clear();
 
       expect(scope.focusInDirection(TraversalDirection.down), isTrue);
       await tester.pump();
-      expectState(<bool>[null, false, null, true, null, null]);
+      expectState(<bool?>[null, false, null, true, null, null]);
       clear();
     });
 
@@ -1485,11 +1528,11 @@ void main() {
       final FocusNode upperLeftNode = Focus.of(tester.element(find.byKey(upperLeftKey)));
       final FocusNode upperRightNode = Focus.of(tester.element(find.byKey(upperRightKey)));
       final FocusNode lowerLeftNode = Focus.of(tester.element(find.byKey(lowerLeftKey)));
-      final FocusNode scope = upperLeftNode.enclosingScope;
+      final FocusNode scope = upperLeftNode.enclosingScope!;
 
       await tester.pump();
 
-      final FocusTraversalPolicy policy = FocusTraversalGroup.of(upperLeftKey.currentContext);
+      final FocusTraversalPolicy policy = FocusTraversalGroup.of(upperLeftKey.currentContext!);
 
       expect(policy.findFirstFocusInDirection(scope, TraversalDirection.up), equals(lowerLeftNode));
       expect(policy.findFirstFocusInDirection(scope, TraversalDirection.down), equals(upperLeftNode));
@@ -1518,7 +1561,7 @@ void main() {
       ));
 
       focusTop.requestFocus();
-      final FocusNode scope = focusTop.enclosingScope;
+      final FocusNode scope = focusTop.enclosingScope!;
 
       scope.focusInDirection(TraversalDirection.down);
       scope.focusInDirection(TraversalDirection.down);
@@ -1599,43 +1642,43 @@ void main() {
         ),
       );
 
-      expect(Focus.of(upperLeftKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(upperLeftKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      expect(Focus.of(upperRightKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(upperRightKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      expect(Focus.of(lowerLeftKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(lowerLeftKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      expect(Focus.of(lowerRightKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(lowerRightKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      expect(Focus.of(upperLeftKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(upperLeftKey.currentContext!).hasPrimaryFocus, isTrue);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
-      expect(Focus.of(lowerRightKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(lowerRightKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
-      expect(Focus.of(lowerLeftKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(lowerLeftKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
-      expect(Focus.of(upperRightKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(upperRightKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
-      expect(Focus.of(upperLeftKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(upperLeftKey.currentContext!).hasPrimaryFocus, isTrue);
 
       // Traverse in a direction
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      expect(Focus.of(upperRightKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(upperRightKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      expect(Focus.of(lowerRightKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(lowerRightKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
-      expect(Focus.of(lowerLeftKey.currentContext).hasPrimaryFocus, isTrue);
+      expect(Focus.of(lowerLeftKey.currentContext!).hasPrimaryFocus, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-      expect(Focus.of(upperLeftKey.currentContext).hasPrimaryFocus, isTrue);
-    }, skip: kIsWeb);
+      expect(Focus.of(upperLeftKey.currentContext!).hasPrimaryFocus, isTrue);
+    }, skip: isBrowser); // https://github.com/flutter/flutter/issues/35347
 
     testWidgets('Focus traversal inside a vertical scrollable scrolls to stay visible.', (WidgetTester tester) async {
       final List<int> items = List<int>.generate(11, (int index) => index).toList();
@@ -1733,7 +1776,7 @@ void main() {
       await tester.pump();
       expect(topNode.hasPrimaryFocus, isTrue);
       expect(controller.offset, equals(0.0));
-    }, skip: kIsWeb);
+    }, skip: isBrowser); // https://github.com/flutter/flutter/issues/35347
 
     testWidgets('Focus traversal inside a horizontal scrollable scrolls to stay visible.', (WidgetTester tester) async {
       final List<int> items = List<int>.generate(11, (int index) => index).toList();
@@ -1831,7 +1874,7 @@ void main() {
       await tester.pump();
       expect(leftNode.hasPrimaryFocus, isTrue);
       expect(controller.offset, equals(0.0));
-    }, skip: kIsWeb);
+    }, skip: isBrowser); // https://github.com/flutter/flutter/issues/35347
 
     testWidgets('Arrow focus traversal actions can be re-enabled for text fields.', (WidgetTester tester) async {
       final GlobalKey upperLeftKey = GlobalKey(debugLabel: 'upperLeftKey');
@@ -2009,7 +2052,7 @@ void main() {
       final GlobalKey key1 = GlobalKey(debugLabel: '1');
       final GlobalKey key2 = GlobalKey(debugLabel: '2');
       final FocusNode focusNode = FocusNode();
-      bool gotFocus;
+      bool? gotFocus;
       await tester.pumpWidget(
         FocusTraversalGroup(
           descendantsAreFocusable: false,
@@ -2042,6 +2085,82 @@ void main() {
       expect(gotFocus, isNull);
       expect(containerNode.hasFocus, isFalse);
       expect(unfocusableNode.hasFocus, isFalse);
+    });
+    testWidgets("Nested FocusTraversalGroup with unfocusable children doesn't assert.", (WidgetTester tester) async {
+      final GlobalKey key1 = GlobalKey(debugLabel: '1');
+      final GlobalKey key2 = GlobalKey(debugLabel: '2');
+      final FocusNode focusNode = FocusNode();
+      bool? gotFocus;
+      await tester.pumpWidget(
+        FocusTraversalGroup(
+          child: Column(
+            children: <Widget>[
+              Focus(
+                autofocus: true,
+                child: Container(),
+              ),
+              FocusTraversalGroup(
+                descendantsAreFocusable: false,
+                child: Focus(
+                  onFocusChange: (bool focused) => gotFocus = focused,
+                  child: Focus(
+                    key: key1,
+                    focusNode: focusNode,
+                    child: Container(key: key2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final Element childWidget = tester.element(find.byKey(key1));
+      final FocusNode unfocusableNode = Focus.of(childWidget);
+      final Element containerWidget = tester.element(find.byKey(key2));
+      final FocusNode containerNode = Focus.of(containerWidget);
+
+      await tester.pump();
+      primaryFocus!.nextFocus();
+
+      expect(gotFocus, isNull);
+      expect(containerNode.hasFocus, isFalse);
+      expect(unfocusableNode.hasFocus, isFalse);
+
+      containerNode.requestFocus();
+      await tester.pump();
+
+      expect(gotFocus, isNull);
+      expect(containerNode.hasFocus, isFalse);
+      expect(unfocusableNode.hasFocus, isFalse);
+    });
+    testWidgets("Empty FocusTraversalGroup doesn't cause an exception.", (WidgetTester tester) async {
+      final GlobalKey key = GlobalKey(debugLabel: 'Test Key');
+      final FocusNode focusNode = FocusNode(debugLabel: 'Test Node');
+      await tester.pumpWidget(
+        FocusTraversalGroup(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Column(
+              children: <Widget>[
+                FocusTraversalGroup(
+                  child: Container(key: key),
+                ),
+                Focus(
+                  focusNode: focusNode,
+                  autofocus: true,
+                  child: Container(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      primaryFocus!.nextFocus();
+      await tester.pump();
+      expect(primaryFocus, equals(focusNode));
     });
   });
   group(RawKeyboardListener, () {
@@ -2087,7 +2206,7 @@ void main() {
 }
 
 class TestRoute extends PageRouteBuilder<void> {
-  TestRoute({Widget child})
+  TestRoute({required Widget child})
       : super(
           pageBuilder: (BuildContext _, Animation<double> __, Animation<double> ___) {
             return child;

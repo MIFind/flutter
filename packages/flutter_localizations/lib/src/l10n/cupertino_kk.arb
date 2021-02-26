@@ -19,6 +19,7 @@
   "copyButtonLabel": "Көшіру",
   "pasteButtonLabel": "Қою",
   "selectAllButtonLabel": "Барлығын таңдау",
-  "tabSemanticsLabel": "TBD",
-  "modalBarrierDismissLabel": "Жабу"
+  "tabSemanticsLabel": "Қойынды: $tabIndex/$tabCount",
+  "modalBarrierDismissLabel": "Жабу",
+  "searchTextFieldPlaceholderLabel": "Іздеу"
 }

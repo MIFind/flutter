@@ -3,18 +3,17 @@
 // found in the LICENSE file.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 
 class TestIcon extends StatefulWidget {
-  const TestIcon({Key key}) : super(key: key);
+  const TestIcon({Key? key}) : super(key: key);
 
   @override
   TestIconState createState() => TestIconState();
 }
 
 class TestIconState extends State<TestIcon> {
-  IconThemeData iconTheme;
+  late IconThemeData iconTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +23,7 @@ class TestIconState extends State<TestIcon> {
 }
 
 class TestText extends StatefulWidget {
-  const TestText(this.text, {Key key}) : super(key: key);
+  const TestText(this.text, {Key? key}) : super(key: key);
 
   final String text;
 
@@ -33,7 +32,7 @@ class TestText extends StatefulWidget {
 }
 
 class TestTextState extends State<TestText> {
-  TextStyle textStyle;
+  late TextStyle textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -111,15 +110,15 @@ void main() {
     expect(getHeight(topKey), getHeight(collapsedKey) - 2.0);
     expect(getHeight(topKey), getHeight(defaultKey) - 2.0);
 
-    BoxDecoration expandedContainerDecoration = getContainer(expandedKey).decoration as BoxDecoration;
+    BoxDecoration expandedContainerDecoration = getContainer(expandedKey).decoration! as BoxDecoration;
     expect(expandedContainerDecoration.color, Colors.red);
-    expect(expandedContainerDecoration.border.top.color, _dividerColor);
-    expect(expandedContainerDecoration.border.bottom.color, _dividerColor);
+    expect(expandedContainerDecoration.border!.top.color, _dividerColor);
+    expect(expandedContainerDecoration.border!.bottom.color, _dividerColor);
 
-    BoxDecoration collapsedContainerDecoration = getContainer(collapsedKey).decoration as BoxDecoration;
+    BoxDecoration collapsedContainerDecoration = getContainer(collapsedKey).decoration! as BoxDecoration;
     expect(collapsedContainerDecoration.color, Colors.transparent);
-    expect(collapsedContainerDecoration.border.top.color, Colors.transparent);
-    expect(collapsedContainerDecoration.border.bottom.color, Colors.transparent);
+    expect(collapsedContainerDecoration.border!.top.color, Colors.transparent);
+    expect(collapsedContainerDecoration.border!.bottom.color, Colors.transparent);
 
     await tester.tap(find.text('Expanded'));
     await tester.tap(find.text('Collapsed'));
@@ -129,11 +128,11 @@ void main() {
 
     // Pump to the middle of the animation for expansion.
     await tester.pump(const Duration(milliseconds: 100));
-    final BoxDecoration collapsingContainerDecoration = getContainer(collapsedKey).decoration as BoxDecoration;
+    final BoxDecoration collapsingContainerDecoration = getContainer(collapsedKey).decoration! as BoxDecoration;
     expect(collapsingContainerDecoration.color, Colors.transparent);
     // Opacity should change but color component should remain the same.
-    expect(collapsingContainerDecoration.border.top.color, const Color(0x15333333));
-    expect(collapsingContainerDecoration.border.bottom.color, const Color(0x15333333));
+    expect(collapsingContainerDecoration.border!.top.color, const Color(0x15333333));
+    expect(collapsingContainerDecoration.border!.bottom.color, const Color(0x15333333));
 
     // Pump all the way to the end now.
     await tester.pump(const Duration(seconds: 1));
@@ -143,16 +142,16 @@ void main() {
     expect(getHeight(topKey), getHeight(defaultKey) - getHeight(tileKey) - 2.0);
 
     // Expanded should be collapsed now.
-    expandedContainerDecoration = getContainer(expandedKey).decoration as BoxDecoration;
+    expandedContainerDecoration = getContainer(expandedKey).decoration! as BoxDecoration;
     expect(expandedContainerDecoration.color, Colors.transparent);
-    expect(expandedContainerDecoration.border.top.color, Colors.transparent);
-    expect(expandedContainerDecoration.border.bottom.color, Colors.transparent);
+    expect(expandedContainerDecoration.border!.top.color, Colors.transparent);
+    expect(expandedContainerDecoration.border!.bottom.color, Colors.transparent);
 
     // Collapsed should be expanded now.
-    collapsedContainerDecoration = getContainer(collapsedKey).decoration as BoxDecoration;
+    collapsedContainerDecoration = getContainer(collapsedKey).decoration! as BoxDecoration;
     expect(collapsedContainerDecoration.color, Colors.transparent);
-    expect(collapsedContainerDecoration.border.top.color, _dividerColor);
-    expect(collapsedContainerDecoration.border.bottom.color, _dividerColor);
+    expect(collapsedContainerDecoration.border!.top.color, _dividerColor);
+    expect(collapsedContainerDecoration.border!.bottom.color, _dividerColor);
   }, variant: const TargetPlatformVariant(<TargetPlatform>{ TargetPlatform.iOS,  TargetPlatform.macOS }));
 
   testWidgets('ListTileTheme', (WidgetTester tester) async {
@@ -193,8 +192,8 @@ void main() {
       ),
     );
 
-    Color iconColor(Key key) => tester.state<TestIconState>(find.byKey(key)).iconTheme.color;
-    Color textColor(Key key) => tester.state<TestTextState>(find.byKey(key)).textStyle.color;
+    Color iconColor(Key key) => tester.state<TestIconState>(find.byKey(key)).iconTheme.color!;
+    Color textColor(Key key) => tester.state<TestTextState>(find.byKey(key)).textStyle.color!;
 
     expect(textColor(expandedTitleKey), _accentColor);
     expect(textColor(collapsedTitleKey), _headerColor);
@@ -481,4 +480,40 @@ void main() {
     expect(columnRect.bottom, paddingRect.bottom - 4);
   });
 
+  testWidgets('ExpansionTile.collapsedBackgroundColor', (WidgetTester tester) async {
+    const Key expansionTileKey = Key('expansionTileKey');
+    const Color backgroundColor = Colors.red;
+    const Color collapsedBackgroundColor = Colors.brown;
+
+    await tester.pumpWidget(const MaterialApp(
+      home: Material(
+        child: ExpansionTile(
+          key: expansionTileKey,
+          title: Text('Title'),
+          backgroundColor: backgroundColor,
+          collapsedBackgroundColor: collapsedBackgroundColor,
+          children: <Widget>[
+            SizedBox(height: 100, width: 100),
+          ],
+        ),
+      ),
+    ));
+
+    BoxDecoration boxDecoration =  tester.firstWidget<Container>(find.descendant(
+      of: find.byKey(expansionTileKey),
+      matching: find.byType(Container),
+    )).decoration! as BoxDecoration;
+
+    expect(boxDecoration.color, collapsedBackgroundColor);
+
+    await tester.tap(find.text('Title'));
+    await tester.pumpAndSettle();
+
+    boxDecoration =  tester.firstWidget<Container>(find.descendant(
+      of: find.byKey(expansionTileKey),
+      matching: find.byType(Container),
+    )).decoration! as BoxDecoration;
+
+    expect(boxDecoration.color, backgroundColor);
+  });
 }

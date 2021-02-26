@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'dart:async';
 
 import 'package:meta/meta.dart';
@@ -11,7 +13,7 @@ import 'io.dart';
 
 typedef SignalHandler = FutureOr<void> Function(ProcessSignal signal);
 
-/// A class that manages signal handlers
+/// A class that manages signal handlers.
 ///
 /// Signal handlers are run in the order that they were added.
 abstract class Signals {
