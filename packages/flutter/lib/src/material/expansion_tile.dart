@@ -4,7 +4,6 @@
 
 import 'package:flutter/widgets.dart';
 
-import 'color_scheme.dart';
 import 'colors.dart';
 import 'icons.dart';
 import 'list_tile.dart';
@@ -242,8 +241,7 @@ class _ExpansionTileState extends State<ExpansionTile> with SingleTickerProvider
       }
       PageStorage.of(context)?.writeState(context, _isExpanded);
     });
-    if (widget.onExpansionChanged != null)
-      widget.onExpansionChanged!(_isExpanded);
+    widget.onExpansionChanged?.call(_isExpanded);
   }
 
   Widget _buildChildren(BuildContext context, Widget? child) {
@@ -290,14 +288,13 @@ class _ExpansionTileState extends State<ExpansionTile> with SingleTickerProvider
   @override
   void didChangeDependencies() {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     _borderColorTween.end = theme.dividerColor;
     _headerColorTween
       ..begin = widget.collapsedTextColor ?? theme.textTheme.subtitle1!.color
-      ..end = widget.textColor ?? colorScheme.secondary;
+      ..end = widget.textColor ?? theme.accentColor;
     _iconColorTween
       ..begin = widget.collapsedIconColor ?? theme.unselectedWidgetColor
-      ..end = widget.iconColor ?? colorScheme.secondary;
+      ..end = widget.iconColor ?? theme.accentColor;
     _backgroundColorTween
       ..begin = widget.collapsedBackgroundColor
       ..end = widget.backgroundColor;
