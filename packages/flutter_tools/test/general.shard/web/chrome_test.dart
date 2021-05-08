@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
 import 'package:file/memory.dart';
+import 'package:file_testing/file_testing.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/logger.dart';
 import 'package:flutter_tools/src/base/os.dart';
@@ -14,7 +13,8 @@ import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/web/chrome.dart';
 
 import '../../src/common.dart';
-import '../../src/context.dart';
+import '../../src/fake_process_manager.dart';
+import '../../src/fakes.dart';
 
 const List<String> kChromeArgs = <String>[
   '--disable-background-timer-throttling',
@@ -27,15 +27,21 @@ const List<String> kChromeArgs = <String>[
   '--disable-translate',
 ];
 
+const List<String> kCodeCache = <String>[
+  'Cache',
+  'Code Cache',
+  'GPUCache',
+];
+
 const String kDevtoolsStderr = '\n\nDevTools listening\n\n';
 
 void main() {
-  FileExceptionHandler exceptionHandler;
-  ChromiumLauncher chromeLauncher;
-  FileSystem fileSystem;
-  Platform platform;
-  FakeProcessManager processManager;
-  OperatingSystemUtils operatingSystemUtils;
+  late FileExceptionHandler exceptionHandler;
+  late ChromiumLauncher chromeLauncher;
+  late FileSystem fileSystem;
+  late Platform platform;
+  late FakeProcessManager processManager;
+  late OperatingSystemUtils operatingSystemUtils;
 
   setUp(() {
     exceptionHandler = FileExceptionHandler();
@@ -352,7 +358,7 @@ void main() {
     );
   });
 
-  testWithoutContext('can seed chrome temp directory with existing session data', () async {
+  testWithoutContext('can seed chrome temp directory with existing session data, excluding Cache folder', () async {
     final Completer<void> exitCompleter = Completer<void>.sync();
     final Directory dataDir = fileSystem.directory('chrome-stuff');
     final File preferencesFile = dataDir
@@ -363,9 +369,16 @@ void main() {
       ..writeAsStringSync('"exit_type":"Crashed"');
 
     final Directory defaultContentDirectory = dataDir
+      .childDirectory('Default')
+      .childDirectory('Foo');
+    defaultContentDirectory.createSync(recursive: true);
+    // Create Cache directories that should be skipped
+    for (final String cache in kCodeCache) {
+      dataDir
         .childDirectory('Default')
-        .childDirectory('Foo');
-        defaultContentDirectory.createSync(recursive: true);
+        .childDirectory(cache)
+        .createSync(recursive: true);
+    }
 
     processManager.addCommand(FakeCommand(
       command: const <String>[
@@ -398,7 +411,15 @@ void main() {
         .childDirectory('Default')
         .childDirectory('Foo');
 
-    expect(defaultContentDir.existsSync(), true);
+    expect(defaultContentDir, exists);
+
+    // Validate cache dirs are not copied.
+    for (final String cache in kCodeCache) {
+      expect(fileSystem
+        .directory('.tmp_rand0/flutter_tools_chrome_device.rand0')
+        .childDirectory('Default')
+        .childDirectory(cache), isNot(exists));
+    }
   });
 
   testWithoutContext('can retry launch when glibc bug happens', () async {
