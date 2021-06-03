@@ -445,7 +445,7 @@ Future<ProcessResult> _resultOfGradleTask({String workingDirectory, String task,
   ];
   final String gradle = path.join(workingDirectory, Platform.isWindows ? 'gradlew.bat' : './gradlew');
   print('┌── $gradle');
-  print('│ ' + File(path.join(workingDirectory, gradle)).readAsLinesSync().join('\n│ '));
+  print(File(path.join(workingDirectory, gradle)).readAsLinesSync().map((String line) => '| $line').join('\n'));
   print('└─────────────────────────────────────────────────────────────────────────────────────');
   print(
     'Running Gradle:\n'
@@ -453,7 +453,6 @@ Future<ProcessResult> _resultOfGradleTask({String workingDirectory, String task,
     '  Arguments: ${args.join(' ')}\n'
     '  Working directory: $workingDirectory\n'
     '  JAVA_HOME: $javaHome\n'
-    ''
   );
   return Process.run(
     gradle,
